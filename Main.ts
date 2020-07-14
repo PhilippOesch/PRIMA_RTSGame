@@ -135,7 +135,7 @@ namespace RTS_V2 {
         } else if (_event.which == 3 && selectedUnits.length != 0) {
 
             commandUnits(position, ray);
-            
+
         } else {
             startSelectionInfo = null;
         }
