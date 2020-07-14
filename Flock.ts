@@ -67,7 +67,7 @@ namespace RTS_V2 {
 
         private getNearbyObjects(_node: Unit): Array<Unit> {
             let nearbyObjects: Unit[] = new Array<Unit>();
-            let objects: Unit[] = getUnits();
+            let objects: Unit[] = getAllUnits();
 
             for (let value of objects) {
                 let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);

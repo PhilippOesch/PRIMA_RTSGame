@@ -55,7 +55,7 @@ namespace RTS_V2 {
 
         //setup AudioNode
         Audio.start();
-        
+
         createUnits();
 
         viewport.addEventListener(ƒ.EVENT_POINTER.DOWN, pointerDown);
@@ -134,31 +134,8 @@ namespace RTS_V2 {
             startSelectionInfo = { startSelectionPos: position, startSelectionClientPos: posMouse };
         } else if (_event.which == 3 && selectedUnits.length != 0) {
 
-            let targetPosArray: ƒ.Vector3[] = Utils.createTargetPosArray(position, 1.5, selectedUnits.length);
-
-            let enemySelected: Unit = null;
-
-            let enemies: Array<Unit> = getUnits(false);
-
-            for (let enemy of enemies) {
-                if (enemy.isInPickingRange(ray)) {
-                    enemySelected = enemy;
-                }
-            }
-            if (enemySelected != null) {
-                for (let unit of selectedUnits) {
-                    unit.setTarget = enemySelected;
-                }
-            } else {
-                let index: number = 0;
-
-                for (let unit of selectedUnits) {
-                    unit.setTarget = null;
-                    unit.setMove = targetPosArray[index];
-                    index++;
-                    console.log(targetPosArray);
-                }
-            }
+            commandUnits(position, ray);
+            
         } else {
             startSelectionInfo = null;
         }
@@ -174,34 +151,9 @@ namespace RTS_V2 {
             selectedUnits = new Array<Unit>();
             let endPos: ƒ.Vector3 = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
 
-            let allunits: Array<Unit> = getUnits();
+            let playerunits: Array<Unit> = getUnits();
 
-            let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(startSelectionInfo.startSelectionPos, endPos);
-            if (distanceVector.magnitudeSquared < 1) {
-                for (let unit of allunits) {
-                    if (unit.isInPickingRange(ray)) {
-                        unit.setPicked(true);
-                        selectedUnits.push(unit);
-                    } else {
-                        unit.setPicked(false);
-                    }
-                }
-            } else {
-                for (let unit of allunits) {
-                    let unitPos: ƒ.Vector3 = unit.mtxWorld.translation.copy;
-                    let adjustedStartPos: ƒ.Vector3 = startSelectionInfo.startSelectionPos.copy;
-                    adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
-                    let adjustedEndPos: ƒ.Vector3 = endPos.copy;
-                    adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
-
-                    if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
-                        unit.setPicked(true);
-                        selectedUnits.push(unit);
-                    } else {
-                        unit.setPicked(false);
-                    }
-                }
-            }
+            selectUnits(startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
 
             console.log(selectedUnits);
         }
@@ -212,6 +164,64 @@ namespace RTS_V2 {
     function pointerMove(_event: ƒ.EventPointer): void {
         let posMouse: ƒ.Vector2 = new ƒ.Vector2(_event.canvasX, _event.canvasY);
         mousePos = posMouse;
+    }
+
+    function commandUnits(_pos: ƒ.Vector3, _ray: ƒ.Ray): void {
+        let targetPosArray: ƒ.Vector3[] = Utils.createTargetPosArray(_pos, 1.5, selectedUnits.length);
+
+        let enemySelected: Unit = null;
+
+        let enemies: Array<Unit> = getUnits(false);
+
+        for (let enemy of enemies) {
+            if (enemy.isInPickingRange(_ray)) {
+                enemySelected = enemy;
+            }
+        }
+        if (enemySelected != null) {
+            for (let unit of selectedUnits) {
+                unit.setTarget = enemySelected;
+            }
+        } else {
+            let index: number = 0;
+
+            for (let unit of selectedUnits) {
+                unit.setTarget = null;
+                unit.setMove = targetPosArray[index];
+                index++;
+                console.log(targetPosArray);
+            }
+        }
+    }
+
+    function selectUnits(_selectionStart: ƒ.Vector3, _selectionEnd: ƒ.Vector3, _ray: ƒ.Ray, _units: Unit[]): void {
+        let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(_selectionStart, _selectionEnd);
+
+        if (distanceVector.magnitudeSquared < 1) {
+            for (let unit of _units) {
+                if (unit.isInPickingRange(_ray)) {
+                    unit.setPicked(true);
+                    selectedUnits.push(unit);
+                } else {
+                    unit.setPicked(false);
+                }
+            }
+        } else {
+            for (let unit of _units) {
+                let unitPos: ƒ.Vector3 = unit.mtxWorld.translation.copy;
+                let adjustedStartPos: ƒ.Vector3 = startSelectionInfo.startSelectionPos.copy;
+                adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
+                let adjustedEndPos: ƒ.Vector3 = _selectionEnd.copy;
+                adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
+
+                if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
+                    unit.setPicked(true);
+                    selectedUnits.push(unit);
+                } else {
+                    unit.setPicked(false);
+                }
+            }
+        }
     }
 
     export function getUnits(_ofPlayer: boolean = true): Array<Unit> {
@@ -231,10 +241,7 @@ namespace RTS_V2 {
         }
     }
 
-    // function getAllUnits(): Array<Unit> {
-    //     let playerUnits: Array<Unit> = getUnits();
-    //     let enemyUnits: Array<Unit> = getUnits(false);
-
-    //     return new Array<Unit>().concat(playerUnits, enemyUnits);
-    // }
+    export function getAllUnits(): Array<Unit> {
+        return units.getChildren().map(value => <Unit>value);
+    }
 }

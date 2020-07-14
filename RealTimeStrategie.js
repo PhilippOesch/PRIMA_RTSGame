@@ -150,7 +150,7 @@ var RTS_V2;
         }
         getNearbyObjects(_node) {
             let nearbyObjects = new Array();
-            let objects = RTS_V2.getUnits();
+            let objects = RTS_V2.getAllUnits();
             for (let value of objects) {
                 let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
                 let distanceSquared = distanceVector.magnitudeSquared;
@@ -321,28 +321,7 @@ var RTS_V2;
             startSelectionInfo = { startSelectionPos: position, startSelectionClientPos: posMouse };
         }
         else if (_event.which == 3 && selectedUnits.length != 0) {
-            let targetPosArray = RTS_V2.Utils.createTargetPosArray(position, 1.5, selectedUnits.length);
-            let enemySelected = null;
-            let enemies = getUnits(false);
-            for (let enemy of enemies) {
-                if (enemy.isInPickingRange(ray)) {
-                    enemySelected = enemy;
-                }
-            }
-            if (enemySelected != null) {
-                for (let unit of selectedUnits) {
-                    unit.setTarget = enemySelected;
-                }
-            }
-            else {
-                let index = 0;
-                for (let unit of selectedUnits) {
-                    unit.setTarget = null;
-                    unit.setMove = targetPosArray[index];
-                    index++;
-                    console.log(targetPosArray);
-                }
-            }
+            commandUnits(position, ray);
         }
         else {
             startSelectionInfo = null;
@@ -355,35 +334,8 @@ var RTS_V2;
         if (_event.which == 1) {
             selectedUnits = new Array();
             let endPos = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
-            let allunits = getUnits();
-            let distanceVector = ƒ.Vector3.DIFFERENCE(startSelectionInfo.startSelectionPos, endPos);
-            if (distanceVector.magnitudeSquared < 1) {
-                for (let unit of allunits) {
-                    if (unit.isInPickingRange(ray)) {
-                        unit.setPicked(true);
-                        selectedUnits.push(unit);
-                    }
-                    else {
-                        unit.setPicked(false);
-                    }
-                }
-            }
-            else {
-                for (let unit of allunits) {
-                    let unitPos = unit.mtxWorld.translation.copy;
-                    let adjustedStartPos = startSelectionInfo.startSelectionPos.copy;
-                    adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
-                    let adjustedEndPos = endPos.copy;
-                    adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
-                    if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
-                        unit.setPicked(true);
-                        selectedUnits.push(unit);
-                    }
-                    else {
-                        unit.setPicked(false);
-                    }
-                }
-            }
+            let playerunits = getUnits();
+            selectUnits(startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
             console.log(selectedUnits);
         }
         startSelectionInfo = null;
@@ -391,6 +343,60 @@ var RTS_V2;
     function pointerMove(_event) {
         let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
         mousePos = posMouse;
+    }
+    function commandUnits(_pos, _ray) {
+        let targetPosArray = RTS_V2.Utils.createTargetPosArray(_pos, 1.5, selectedUnits.length);
+        let enemySelected = null;
+        let enemies = getUnits(false);
+        for (let enemy of enemies) {
+            if (enemy.isInPickingRange(_ray)) {
+                enemySelected = enemy;
+            }
+        }
+        if (enemySelected != null) {
+            for (let unit of selectedUnits) {
+                unit.setTarget = enemySelected;
+            }
+        }
+        else {
+            let index = 0;
+            for (let unit of selectedUnits) {
+                unit.setTarget = null;
+                unit.setMove = targetPosArray[index];
+                index++;
+                console.log(targetPosArray);
+            }
+        }
+    }
+    function selectUnits(_selectionStart, _selectionEnd, _ray, _units) {
+        let distanceVector = ƒ.Vector3.DIFFERENCE(_selectionStart, _selectionEnd);
+        if (distanceVector.magnitudeSquared < 1) {
+            for (let unit of _units) {
+                if (unit.isInPickingRange(_ray)) {
+                    unit.setPicked(true);
+                    selectedUnits.push(unit);
+                }
+                else {
+                    unit.setPicked(false);
+                }
+            }
+        }
+        else {
+            for (let unit of _units) {
+                let unitPos = unit.mtxWorld.translation.copy;
+                let adjustedStartPos = startSelectionInfo.startSelectionPos.copy;
+                adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
+                let adjustedEndPos = _selectionEnd.copy;
+                adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
+                if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
+                    unit.setPicked(true);
+                    selectedUnits.push(unit);
+                }
+                else {
+                    unit.setPicked(false);
+                }
+            }
+        }
     }
     function getUnits(_ofPlayer = true) {
         let array = RTS_V2.units.getChildren().map(value => value);
@@ -410,11 +416,10 @@ var RTS_V2;
         }
     }
     RTS_V2.getUnits = getUnits;
-    // function getAllUnits(): Array<Unit> {
-    //     let playerUnits: Array<Unit> = getUnits();
-    //     let enemyUnits: Array<Unit> = getUnits(false);
-    //     return new Array<Unit>().concat(playerUnits, enemyUnits);
-    // }
+    function getAllUnits() {
+        return RTS_V2.units.getChildren().map(value => value);
+    }
+    RTS_V2.getAllUnits = getAllUnits;
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
