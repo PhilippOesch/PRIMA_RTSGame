@@ -1,20 +1,15 @@
+/// <reference path="GameObject.ts"/>
 namespace RTS_V2 {
     import ƒ = FudgeCore;
 
-    export abstract class Unit extends ƒ.Node {
-        public collisionRange: number;
-        public isPlayer: boolean;
-
+    export abstract class Unit extends GameObject {
         protected shootingRange: number;
         protected shootingRate: number;
-        protected target: Unit;
+        protected target: GameObject;
         protected shootingTimer: ƒ.Timer;
         protected moveTo: ƒ.Vector3;
         protected speed: number = 3 / 1000;
-        protected health: number = 1;
-        protected armor: number = 2;
         protected flock: Flock;
-        protected isDead: boolean = false;
 
         protected healthBar: Healthbar;
 
@@ -22,7 +17,7 @@ namespace RTS_V2 {
             this.moveTo = _pos;
         }
 
-        public set setTarget(_target: Unit) {
+        public set setTarget(_target: GameObject) {
             this.target = _target;
         }
 
@@ -51,27 +46,6 @@ namespace RTS_V2 {
             }
         }
 
-        public isInPickingRange(_ray: ƒ.Ray): boolean {
-            let distanceVector: ƒ.Vector3 = _ray.getDistance(this.mtxWorld.translation.copy);
-            if (distanceVector.magnitudeSquared < this.collisionRange ** 2) {
-                return true;
-            } else {
-                return false;
-            }
-        }
-
-        public calculateDamage(_bullet: Bullet): void {
-            this.health -= (_bullet.damage / this.armor);
-            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
-            if (this.health <= 0 && !this.isDead) {
-                units.removeChild(this);
-                this.isDead = true;
-                this.healthBar.delete();
-                this.healthBar = null;
-            }
-        }
-
-
         public setPicked(_bool: boolean): void {
             console.log("isPicked");
         }
@@ -97,15 +71,7 @@ namespace RTS_V2 {
 
         }
 
-        protected getTextureMaterial(_img: HTMLImageElement): ƒ.Material {
-            let txt: ƒ.TextureImage = new ƒ.TextureImage();
-            let coatTxt: ƒ.CoatTextured = new ƒ.CoatTextured();
-            txt.image = _img;
-            coatTxt.texture = txt;
-            return new ƒ.Material(name, ƒ.ShaderTexture, coatTxt);
-        }
-
-        protected shoot = (_node: ƒ.Node, _target: Unit): void => {
+        protected shoot = (_node: ƒ.Node, _target: GameObject): void => {
             let startingPos: ƒ.Matrix4x4 = _node.mtxWorld.copy;
             let bullet: Bullet = new Bullet(startingPos.translation.copy, _target);
 

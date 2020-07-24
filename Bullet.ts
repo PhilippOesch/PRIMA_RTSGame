@@ -7,12 +7,12 @@ namespace RTS_V2 {
 
         public damage: number = 0.5;
 
-        private target: Unit;
+        private target: GameObject;
         private speed: number;
         private collisionActive: boolean = true;
         private textureNode: ƒ.Node;
 
-        constructor(_pos: ƒ.Vector3, _target: Unit, _speed: number = 0.1) {
+        constructor(_pos: ƒ.Vector3, _target: GameObject, _speed: number = 0.1) {
             super("Bullet");
             this.target = _target;
             this.speed = _speed;

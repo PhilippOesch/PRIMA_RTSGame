@@ -20,8 +20,10 @@ namespace RTS_V2 {
         constructor(_name: string, _pos: ƒ.Vector3, _isPlayer: boolean = true) {
             super(_name);
             this.isPlayer = _isPlayer;
-            this.collisionRange = 1;
+            this.collisionRange = 0.6;
             this.shootingRange = 5;
+            this.health = 1;
+            this.armor = 3;
             this.shootingRate = 1000;
             this.speed = 3 / 1000;
             this.flock = new Flock(this);
@@ -56,8 +58,12 @@ namespace RTS_V2 {
             }
             if (this.moveTo != null && this.moveTo != undefined) {
                 this.move(this.moveTo);
-                let pointAt: ƒ.Vector3 = this.moveTo.copy;
-                Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+
+                //don't ask why! it somehow prevents an error and works
+                if (this.moveTo != null) {
+                    let pointAt: ƒ.Vector3 = this.moveTo.copy;
+                    Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                }
             }
         }
 

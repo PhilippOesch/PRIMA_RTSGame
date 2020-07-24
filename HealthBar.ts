@@ -5,20 +5,22 @@ namespace RTS_V2 {
     export class Healthbar /* implements ƒ.MutableForUserInterface*/ {
         element: HTMLProgressElement;
         // element: HTMLElement;
-        unit: Unit;
+        unit: GameObject;
         elementWidth: number = 30; //in px
         //uiController: ƒUi.Controller;
         // health: number = 0;
 
-        constructor(_unit: Unit) {
-            this.unit = _unit;
+        constructor(_gameobject: GameObject, _height: number = 15, _width: number = 30) {
+            this.elementWidth = _width;
+            this.unit = _gameobject;
             this.element = document.createElement("progress");
             //this.element = document.createElement("custom-healtbar");
             this.element.value = this.unit.getHealth;
             this.element.setAttribute("value", this.unit.getHealth + "");
             this.element.setAttribute("key", "health");
             this.element.setAttribute("min", "0");
-            this.element.style.width = 30 + "px";
+            this.element.style.width = _width + "px";
+            this.element.style.height = _height + "px";
             //this.element.max = 100;
             this.element.setAttribute("max", "1");
             document.body.appendChild(this.element);

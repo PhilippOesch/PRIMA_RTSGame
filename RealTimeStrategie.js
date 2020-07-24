@@ -33,6 +33,76 @@ var RTS_V2;
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
+    class GameObject extends ƒ.Node {
+        get getHealth() {
+            return this.health;
+        }
+        setPicked(_bool) {
+            console.log("isPicked");
+        }
+        isInPickingRange(_ray) {
+            let distanceVector = _ray.getDistance(this.mtxWorld.translation.copy);
+            if (distanceVector.magnitudeSquared < this.collisionRange ** 2) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        calculateDamage(_bullet) {
+            this.health -= (_bullet.damage / this.armor);
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+            }
+        }
+        getTextureMaterial(_img) {
+            let txt = new ƒ.TextureImage();
+            let coatTxt = new ƒ.CoatTextured();
+            txt.image = _img;
+            coatTxt.texture = txt;
+            return new ƒ.Material(name, ƒ.ShaderTexture, coatTxt);
+        }
+    }
+    RTS_V2.GameObject = GameObject;
+})(RTS_V2 || (RTS_V2 = {}));
+/// <reference path="GameObject.ts"/>
+var RTS_V2;
+/// <reference path="GameObject.ts"/>
+(function (RTS_V2) {
+    var ƒ = FudgeCore;
+    class Base extends RTS_V2.GameObject {
+        constructor(_name, _pos, _isPlayer = true) {
+            super(_name);
+            this.isPlayer = _isPlayer;
+            this.collisionRange = 2.5;
+            this.health = 1;
+            this.armor = 20;
+            this.healthBar = new RTS_V2.Healthbar(this, 15, 40);
+            this.createNode(_pos);
+        }
+        static loadImage() {
+            Base.img = document.querySelector("#base");
+        }
+        createNode(_pos) {
+            let mesh = new ƒ.MeshSprite();
+            let mtr = this.getTextureMaterial(Base.img);
+            let cmpMesh = new ƒ.ComponentMesh(mesh);
+            cmpMesh.pivot.scale(new ƒ.Vector3(2, 2, 0));
+            let cmpMaterial = new ƒ.ComponentMaterial(mtr);
+            let cmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(_pos));
+            this.addComponent(cmpMesh);
+            this.addComponent(cmpMaterial);
+            this.addComponent(cmpTransform);
+        }
+    }
+    RTS_V2.Base = Base;
+})(RTS_V2 || (RTS_V2 = {}));
+var RTS_V2;
+(function (RTS_V2) {
     var ƒ = FudgeCore;
     var ƒAid = FudgeAid;
     class Bullet extends ƒ.Node {
@@ -150,7 +220,7 @@ var RTS_V2;
         }
         getNearbyObjects(_node) {
             let nearbyObjects = new Array();
-            let objects = RTS_V2.getAllUnits();
+            let objects = RTS_V2.Utils.getAllGameObjects();
             for (let value of objects) {
                 let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
                 let distanceSquared = distanceVector.magnitudeSquared;
@@ -170,16 +240,18 @@ var RTS_V2;
     class Healthbar /* implements ƒ.MutableForUserInterface*/ {
         //uiController: ƒUi.Controller;
         // health: number = 0;
-        constructor(_unit) {
+        constructor(_gameobject, _height = 15, _width = 30) {
             this.elementWidth = 30; //in px
-            this.unit = _unit;
+            this.elementWidth = _width;
+            this.unit = _gameobject;
             this.element = document.createElement("progress");
             //this.element = document.createElement("custom-healtbar");
             this.element.value = this.unit.getHealth;
             this.element.setAttribute("value", this.unit.getHealth + "");
             this.element.setAttribute("key", "health");
             this.element.setAttribute("min", "0");
-            this.element.style.width = 30 + "px";
+            this.element.style.width = _width + "px";
+            this.element.style.height = _height + "px";
             //this.element.max = 100;
             this.element.setAttribute("max", "1");
             document.body.appendChild(this.element);
@@ -222,12 +294,9 @@ var RTS_V2;
 (function (RTS_V2) {
     var ƒ = FudgeCore;
     var ƒAid = FudgeAid;
-    let selectedUnits = new Array();
-    let startSelectionInfo;
-    let terrainX = 30;
-    let terrainY = 20;
-    let terrainTiling = 5;
-    let mousePos;
+    RTS_V2.terrainX = 30;
+    RTS_V2.terrainY = 20;
+    let terrainTiling = 5; //size of each tile
     //let mousePos= ƒ.Vector2;
     ƒ.RenderManager.initialize(true, false);
     window.addEventListener("load", hndLoad);
@@ -240,13 +309,15 @@ var RTS_V2;
         canvas.addEventListener("contextmenu", event => event.preventDefault());
         RTS_V2.Bullet.loadImages();
         RTS_V2.TankUnit.loadImages();
+        RTS_V2.Base.loadImage();
         let graph = new ƒ.Node("Game");
         let terrain = createTerrainNode(backgroundImg);
         graph.appendChild(terrain);
         RTS_V2.bullets = new ƒ.Node("Bullets");
-        RTS_V2.units = new ƒ.Node("Units");
+        RTS_V2.gameobjects = new ƒ.Node("GameObjects");
         graph.appendChild(RTS_V2.bullets);
-        graph.appendChild(RTS_V2.units);
+        graph.appendChild(RTS_V2.gameobjects);
+        console.log(RTS_V2.playerManager);
         let cmpCamera = new ƒ.ComponentCamera();
         cmpCamera.pivot.translate(ƒ.Vector3.Z(35));
         let cameraLookAt = new ƒ.Vector3(0, 0, 0);
@@ -256,13 +327,8 @@ var RTS_V2;
         RTS_V2.viewport.initialize("Viewport", graph, cmpCamera, canvas);
         //setup AudioNode
         RTS_V2.Audio.start();
+        RTS_V2.playerManager = new RTS_V2.PlayerManager();
         createUnits();
-        RTS_V2.viewport.addEventListener("\u0192pointerdown" /* DOWN */, pointerDown);
-        RTS_V2.viewport.addEventListener("\u0192pointerup" /* UP */, pointerUp);
-        RTS_V2.viewport.addEventListener("\u0192pointermove" /* MOVE */, pointerMove);
-        RTS_V2.viewport.activatePointerEvent("\u0192pointerdown" /* DOWN */, true);
-        RTS_V2.viewport.activatePointerEvent("\u0192pointerup" /* UP */, true);
-        RTS_V2.viewport.activatePointerEvent("\u0192pointermove" /* MOVE */, true);
         ƒ.Debug.log(RTS_V2.viewport);
         ƒ.Debug.log(graph);
         RTS_V2.viewport.draw();
@@ -271,8 +337,9 @@ var RTS_V2;
     }
     function update() {
         RTS_V2.viewport.draw();
-        if (startSelectionInfo != null) {
-            drawSelectionRectangle(startSelectionInfo.startSelectionClientPos, mousePos);
+        console.log(RTS_V2.playerManager.startSelectionInfo);
+        if (RTS_V2.playerManager.startSelectionInfo != null) {
+            RTS_V2.Utils.drawSelectionRectangle(RTS_V2.playerManager.startSelectionInfo.startSelectionClientPos, RTS_V2.playerManager.mousePos);
         }
     }
     function createTerrainNode(_img) {
@@ -284,21 +351,10 @@ var RTS_V2;
         let mtr = new ƒ.Material("mtrTerrain", ƒ.ShaderTexture, coat);
         let terrain = new ƒAid.Node("Terrain", ƒ.Matrix4x4.IDENTITY(), mtr, mesh);
         let terrainsCmpMesh = terrain.getComponent(ƒ.ComponentMesh);
-        terrainsCmpMesh.pivot.scale(new ƒ.Vector3(terrainX, terrainY, 0));
+        terrainsCmpMesh.pivot.scale(new ƒ.Vector3(RTS_V2.terrainX, RTS_V2.terrainY, 0));
         let cmpMtr = terrain.getComponent(ƒ.ComponentMaterial);
-        cmpMtr.pivot.scale(new ƒ.Vector2(terrainX / terrainTiling, terrainY / terrainTiling));
+        cmpMtr.pivot.scale(new ƒ.Vector2(RTS_V2.terrainX / terrainTiling, RTS_V2.terrainY / terrainTiling));
         return terrain;
-    }
-    function drawSelectionRectangle(_startClient, _endClient) {
-        let ctx = RTS_V2.viewport.getContext();
-        let vector = _endClient.copy;
-        vector.subtract(_startClient);
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(_startClient.x, _startClient.y, vector.x, vector.y);
-        ctx.strokeStyle = "Black";
-        ctx.lineWidth = 3;
-        ctx.stroke();
     }
     function createUnits() {
         let unit0 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(0, 2, 0.1), false);
@@ -306,131 +362,74 @@ var RTS_V2;
         let unit2 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(0, 0, 0.1));
         let unit3 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(2, 0, 0.1));
         let unit4 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(2, 2, 0.1));
-        RTS_V2.units.appendChild(unit0);
-        RTS_V2.units.appendChild(unit1);
-        RTS_V2.units.appendChild(unit2);
-        RTS_V2.units.appendChild(unit3);
-        RTS_V2.units.appendChild(unit4);
+        RTS_V2.gameobjects.appendChild(unit0);
+        RTS_V2.gameobjects.appendChild(unit1);
+        RTS_V2.gameobjects.appendChild(unit2);
+        RTS_V2.gameobjects.appendChild(unit3);
+        RTS_V2.gameobjects.appendChild(unit4);
     }
-    function pointerDown(_event) {
-        let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
-        let ray = RTS_V2.viewport.getRayFromClient(posMouse);
-        let position = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
-        if (_event.which == 1) { //Left Mouse Click
-            mousePos = posMouse;
-            startSelectionInfo = { startSelectionPos: position, startSelectionClientPos: posMouse };
-        }
-        else if (_event.which == 3 && selectedUnits.length != 0) {
-            commandUnits(position, ray);
-        }
-        else {
-            startSelectionInfo = null;
-        }
-    }
-    function pointerUp(_event) {
-        _event.preventDefault();
-        let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
-        let ray = RTS_V2.viewport.getRayFromClient(posMouse);
-        if (_event.which == 1) {
-            selectedUnits = new Array();
-            let endPos = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
-            let playerunits = getUnits();
-            selectUnits(startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
-            console.log(selectedUnits);
-        }
-        startSelectionInfo = null;
-    }
-    function pointerMove(_event) {
-        let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
-        mousePos = posMouse;
-    }
-    function commandUnits(_pos, _ray) {
-        let targetPosArray = RTS_V2.Utils.createTargetPosArray(_pos, 1.5, selectedUnits.length);
-        let enemySelected = null;
-        let enemies = getUnits(false);
-        for (let enemy of enemies) {
-            if (enemy.isInPickingRange(_ray)) {
-                enemySelected = enemy;
-            }
-        }
-        if (enemySelected != null) {
-            for (let unit of selectedUnits) {
-                unit.setTarget = enemySelected;
-            }
-        }
-        else {
-            let index = 0;
-            for (let unit of selectedUnits) {
-                unit.setTarget = null;
-                unit.setMove = targetPosArray[index];
-                index++;
-                console.log(targetPosArray);
-            }
-        }
-    }
-    function selectUnits(_selectionStart, _selectionEnd, _ray, _units) {
-        let distanceVector = ƒ.Vector3.DIFFERENCE(_selectionStart, _selectionEnd);
-        if (distanceVector.magnitudeSquared < 1) {
-            for (let unit of _units) {
-                if (unit.isInPickingRange(_ray)) {
-                    unit.setPicked(true);
-                    selectedUnits.push(unit);
-                }
-                else {
-                    unit.setPicked(false);
-                }
-            }
-        }
-        else {
-            for (let unit of _units) {
-                let unitPos = unit.mtxWorld.translation.copy;
-                let adjustedStartPos = startSelectionInfo.startSelectionPos.copy;
-                adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
-                let adjustedEndPos = _selectionEnd.copy;
-                adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
-                if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
-                    unit.setPicked(true);
-                    selectedUnits.push(unit);
-                }
-                else {
-                    unit.setPicked(false);
-                }
-            }
-        }
-    }
-    function getUnits(_ofPlayer = true) {
-        let array = RTS_V2.units.getChildren().map(value => value);
-        if (_ofPlayer) {
-            return array.filter((value) => {
-                if (value.isPlayer)
-                    return true;
-                return false;
-            });
-        }
-        else {
-            return array.filter((value) => {
-                if (!value.isPlayer)
-                    return true;
-                return false;
-            });
-        }
-    }
-    RTS_V2.getUnits = getUnits;
-    function getAllUnits() {
-        return RTS_V2.units.getChildren().map(value => value);
-    }
-    RTS_V2.getAllUnits = getAllUnits;
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
     var ƒ = FudgeCore;
-    class Unit extends ƒ.Node {
+    class PlayerManager {
+        constructor() {
+            this.pointerUp = (_event) => {
+                _event.preventDefault();
+                let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
+                let ray = RTS_V2.viewport.getRayFromClient(posMouse);
+                if (_event.which == 1) {
+                    let endPos = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
+                    let playerunits = RTS_V2.Utils.getUnits();
+                    this.selectedUnits = RTS_V2.Utils.selectUnits(this.startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
+                    console.log(this.selectedUnits);
+                }
+                this.startSelectionInfo = null;
+            };
+            this.pointerDown = (_event) => {
+                let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
+                let ray = RTS_V2.viewport.getRayFromClient(posMouse);
+                let position = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
+                if (_event.which == 1) { //Left Mouse Click
+                    this.mousePos = posMouse;
+                    this.startSelectionInfo = { startSelectionPos: position, startSelectionClientPos: posMouse };
+                }
+                else if (_event.which == 3 && this.selectedUnits.length != 0) {
+                    RTS_V2.Utils.commandUnits(this.selectedUnits, position, ray);
+                }
+                else {
+                    this.startSelectionInfo = null;
+                }
+            };
+            this.pointerMove = (_event) => {
+                let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
+                this.mousePos = posMouse;
+            };
+            this.createBase();
+            RTS_V2.viewport.addEventListener("\u0192pointerdown" /* DOWN */, this.pointerDown);
+            RTS_V2.viewport.addEventListener("\u0192pointerup" /* UP */, this.pointerUp);
+            RTS_V2.viewport.addEventListener("\u0192pointermove" /* MOVE */, this.pointerMove);
+            RTS_V2.viewport.activatePointerEvent("\u0192pointerdown" /* DOWN */, true);
+            RTS_V2.viewport.activatePointerEvent("\u0192pointerup" /* UP */, true);
+            RTS_V2.viewport.activatePointerEvent("\u0192pointermove" /* MOVE */, true);
+        }
+        createBase() {
+            let pos = new ƒ.Vector3(-(RTS_V2.terrainX / 2) + 5, 0, 0.1);
+            this.base = new RTS_V2.Base("playerBase", pos);
+            RTS_V2.gameobjects.appendChild(this.base);
+        }
+    }
+    RTS_V2.PlayerManager = PlayerManager;
+})(RTS_V2 || (RTS_V2 = {}));
+/// <reference path="GameObject.ts"/>
+var RTS_V2;
+/// <reference path="GameObject.ts"/>
+(function (RTS_V2) {
+    var ƒ = FudgeCore;
+    class Unit extends RTS_V2.GameObject {
         constructor() {
             super(...arguments);
             this.speed = 3 / 1000;
-            this.health = 1;
-            this.armor = 2;
-            this.isDead = false;
             this.shoot = (_node, _target) => {
                 let startingPos = _node.mtxWorld.copy;
                 let bullet = new RTS_V2.Bullet(startingPos.translation.copy, _target);
@@ -466,25 +465,6 @@ var RTS_V2;
                 this.clearTimer();
             }
         }
-        isInPickingRange(_ray) {
-            let distanceVector = _ray.getDistance(this.mtxWorld.translation.copy);
-            if (distanceVector.magnitudeSquared < this.collisionRange ** 2) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        calculateDamage(_bullet) {
-            this.health -= (_bullet.damage / this.armor);
-            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
-            if (this.health <= 0 && !this.isDead) {
-                RTS_V2.units.removeChild(this);
-                this.isDead = true;
-                this.healthBar.delete();
-                this.healthBar = null;
-            }
-        }
         setPicked(_bool) {
             console.log("isPicked");
         }
@@ -502,13 +482,6 @@ var RTS_V2;
             let pointAt = moveVector.copy;
             pointAt.subtract(this.mtxWorld.translation);
             this.cmpTransform.local.translate(ƒ.Vector3.NORMALIZATION(moveVector, distanceToTravel));
-        }
-        getTextureMaterial(_img) {
-            let txt = new ƒ.TextureImage();
-            let coatTxt = new ƒ.CoatTextured();
-            txt.image = _img;
-            coatTxt.texture = txt;
-            return new ƒ.Material(name, ƒ.ShaderTexture, coatTxt);
         }
         clearTimer() {
             if (this.shootingTimer != undefined) {
@@ -535,8 +508,10 @@ var RTS_V2;
         constructor(_name, _pos, _isPlayer = true) {
             super(_name);
             this.isPlayer = _isPlayer;
-            this.collisionRange = 1;
+            this.collisionRange = 0.6;
             this.shootingRange = 5;
+            this.health = 1;
+            this.armor = 3;
             this.shootingRate = 1000;
             this.speed = 3 / 1000;
             this.flock = new RTS_V2.Flock(this);
@@ -569,8 +544,11 @@ var RTS_V2;
             }
             if (this.moveTo != null && this.moveTo != undefined) {
                 this.move(this.moveTo);
-                let pointAt = this.moveTo.copy;
-                RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                //don't ask why! it somehow prevents an error and works
+                if (this.moveTo != null) {
+                    let pointAt = this.moveTo.copy;
+                    RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                }
             }
         }
         follow() {
@@ -642,6 +620,115 @@ var RTS_V2;
             return targetPosArray;
         }
         Utils.createTargetPosArray = createTargetPosArray;
+        function commandUnits(_selectedunits, _pos, _ray) {
+            let targetPosArray = Utils.createTargetPosArray(_pos, 1.5, _selectedunits.length);
+            let enemySelected = null;
+            let enemies = getGameObjects(false);
+            for (let enemy of enemies) {
+                if (enemy.isInPickingRange(_ray)) {
+                    enemySelected = enemy;
+                }
+            }
+            if (enemySelected != null) {
+                for (let unit of _selectedunits) {
+                    unit.setTarget = enemySelected;
+                }
+            }
+            else {
+                let index = 0;
+                for (let unit of _selectedunits) {
+                    unit.setTarget = null;
+                    unit.setMove = targetPosArray[index];
+                    index++;
+                }
+            }
+        }
+        Utils.commandUnits = commandUnits;
+        function selectUnits(_selectionStart, _selectionEnd, _ray, _units) {
+            let distanceVector = ƒ.Vector3.DIFFERENCE(_selectionStart, _selectionEnd);
+            let selectedUnits = new Array();
+            if (distanceVector.magnitudeSquared < 1) {
+                for (let unit of _units) {
+                    if (unit.isInPickingRange(_ray)) {
+                        unit.setPicked(true);
+                        selectedUnits.push(unit);
+                    }
+                    else {
+                        unit.setPicked(false);
+                    }
+                }
+            }
+            else {
+                for (let unit of _units) {
+                    let unitPos = unit.mtxWorld.translation.copy;
+                    let adjustedStartPos = _selectionStart.copy;
+                    adjustedStartPos.subtract(ƒ.Vector3.Z(0.5));
+                    let adjustedEndPos = _selectionEnd.copy;
+                    adjustedEndPos.add((ƒ.Vector3.Z(0.5)));
+                    if (unitPos.isInsideCube(adjustedStartPos, adjustedEndPos)) {
+                        unit.setPicked(true);
+                        selectedUnits.push(unit);
+                    }
+                    else {
+                        unit.setPicked(false);
+                    }
+                }
+            }
+            return selectedUnits;
+        }
+        Utils.selectUnits = selectUnits;
+        function getGameObjects(_isPlayer = true) {
+            let array = RTS_V2.gameobjects.getChildren().map(value => value);
+            if (_isPlayer) {
+                return array.filter((value) => {
+                    if (value.isPlayer)
+                        return true;
+                    return false;
+                });
+            }
+            else {
+                return array.filter((value) => {
+                    if (!value.isPlayer)
+                        return true;
+                    return false;
+                });
+            }
+        }
+        Utils.getGameObjects = getGameObjects;
+        function getUnits(_isPlayer = true) {
+            let array = RTS_V2.gameobjects.getChildren().map(value => value);
+            if (_isPlayer) {
+                return array.filter((value) => {
+                    if (value.isPlayer)
+                        return true;
+                    return false;
+                });
+            }
+            else {
+                return array.filter((value) => {
+                    if (!value.isPlayer)
+                        return true;
+                    return false;
+                });
+            }
+        }
+        Utils.getUnits = getUnits;
+        function getAllGameObjects() {
+            return RTS_V2.gameobjects.getChildren().map(value => value);
+        }
+        Utils.getAllGameObjects = getAllGameObjects;
+        function drawSelectionRectangle(_startClient, _endClient) {
+            let ctx = RTS_V2.viewport.getContext();
+            let vector = _endClient.copy;
+            vector.subtract(_startClient);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(_startClient.x, _startClient.y, vector.x, vector.y);
+            ctx.strokeStyle = "Black";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+        Utils.drawSelectionRectangle = drawSelectionRectangle;
     })(Utils = RTS_V2.Utils || (RTS_V2.Utils = {}));
 })(RTS_V2 || (RTS_V2 = {}));
 //# sourceMappingURL=RealTimeStrategie.js.map

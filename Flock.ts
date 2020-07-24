@@ -19,7 +19,7 @@ namespace RTS_V2 {
 
         public calculateMove(_move: ƒ.Vector3): ƒ.Vector3 {
             let move: ƒ.Vector3 = ƒ.Vector3.ZERO();
-            let neighbors: Unit[] = this.getNearbyObjects(this.unit);
+            let neighbors: GameObject[] = this.getNearbyObjects(this.unit);
 
             let avoidanceMove: ƒ.Vector3 = this.avoidance(this.unit, neighbors);
             avoidanceMove.scale(this.avoidanceWeight);
@@ -34,7 +34,7 @@ namespace RTS_V2 {
             return move;
         }
 
-        private avoidance(_node: Unit, _neighbors: Unit[]): ƒ.Vector3 {
+        private avoidance(_node: Unit, _neighbors: GameObject[]): ƒ.Vector3 {
             if (_neighbors.length == 0) {
                 return ƒ.Vector3.ZERO();
             }
@@ -65,9 +65,9 @@ namespace RTS_V2 {
             return _vector;
         }
 
-        private getNearbyObjects(_node: Unit): Array<Unit> {
-            let nearbyObjects: Unit[] = new Array<Unit>();
-            let objects: Unit[] = getAllUnits();
+        private getNearbyObjects(_node: Unit): Array<GameObject> {
+            let nearbyObjects: GameObject[] = new Array<GameObject>();
+            let objects: GameObject[] = Utils.getAllGameObjects();
 
             for (let value of objects) {
                 let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
