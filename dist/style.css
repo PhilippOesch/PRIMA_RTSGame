@@ -1,0 +1,84 @@
+body,
+html {
+    height: 100%;
+    margin: 0px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    font-family: Montserrat;
+}
+
+canvas {
+    flex-grow: 1;
+}
+
+img {
+    display: none;
+}
+
+progress {
+    position: absolute;
+    width: 30px;
+    height: 15px;
+    z-index: 10;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+progress::-webkit-progress-bar {
+    background: white;
+}
+
+.enemy::-webkit-progress-value {
+    background: red;
+}
+
+.player::-webkit-progress-value {
+    background: blue;
+}
+
+.head{
+    position: absolute;
+    left: 10px;
+}
+
+#buymenu{
+    background-color: white;
+    width: 150px;
+    position: absolute;
+    display: none;
+    right: 75%;
+    bottom: 50%;
+    z-index: 12;
+
+    border: #333333 2px solid;
+    border-radius: 5px;
+}
+
+#buymenu h3{
+    padding: 0.8rem 1rem;
+    margin: 0;
+}
+
+#buymenu button{
+    background-color: white;
+    width: 100%;
+    border: none;
+    border-top: #333333 2px solid;
+    padding: 0.3rem 0.5rem;
+    font-size: 11pt;
+}
+
+.head h2{
+    margin-bottom: 0;
+}
+
+.head h1{
+    margin-top: 0;
+}
+
+.unit-count-container{
+    padding-top: 1rem;
+}

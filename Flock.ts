@@ -4,17 +4,20 @@ namespace RTS_V2 {
         unit: Unit;
         neighborRadius: number = 5;
         avoidanceRadius: number = 1.3;
+        avoidanceRadiusBase: number = 1.7;
 
         moveweight: number = 0.4;
         avoidanceWeight: number = 0.6;
 
         squareNeighborRadius: number;
         squareAvoidanceRadius: number;
+        squareAvoidanceRadiusBase: number;
 
         constructor(_unit: Unit) {
             this.unit = _unit;
             this.squareNeighborRadius = this.neighborRadius ** 2;
             this.squareAvoidanceRadius = this.avoidanceRadius ** 2;
+            this.squareAvoidanceRadiusBase = this.avoidanceRadiusBase ** 2;
         }
 
         public calculateMove(_move: ƒ.Vector3): ƒ.Vector3 {
@@ -30,6 +33,7 @@ namespace RTS_V2 {
 
             move.add(avoidanceMove);
             move.add(weightedMove);
+            move.z = 0;
 
             return move;
         }
@@ -43,7 +47,12 @@ namespace RTS_V2 {
             let nAvoide: number = 0;
             for (let element of _neighbors) {
                 let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(element.mtxWorld.translation, _node.mtxWorld.translation);
-                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius) {
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius ) {
+                    let avoidVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
+                    avoidanceMove.add(avoidVector);
+                    nAvoide++;
+                }
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadiusBase && (element == playerManager.base || element == aiManager.base)) {
                     let avoidVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
                     avoidanceMove.add(avoidVector);
                     nAvoide++;

@@ -12,6 +12,7 @@ namespace RTS_V2 {
     export let terrainY: number = 20;
 
     export let playerManager: PlayerManager;
+    export let aiManager: AIManager;
 
     let terrainTiling: number = 5; //size of each tile
 
@@ -48,7 +49,7 @@ namespace RTS_V2 {
         cmpCamera.pivot.translate(ƒ.Vector3.Z(35));
         let cameraLookAt: ƒ.Vector3 = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
-        cmpCamera.backgroundColor = ƒ.Color.CSS("white");
+        cmpCamera.backgroundColor = ƒ.Color.CSS("#cccccc");
 
         viewport = new ƒ.Viewport();
         viewport.initialize("Viewport", graph, cmpCamera, canvas);
@@ -57,6 +58,8 @@ namespace RTS_V2 {
         Audio.start();
 
         playerManager = new PlayerManager();
+        aiManager = new AIManager();
+
         createUnits();
 
         ƒ.Debug.log(viewport);
@@ -70,8 +73,7 @@ namespace RTS_V2 {
 
     function update(): void {
         viewport.draw();
-        console.log(playerManager.startSelectionInfo);
-        if(playerManager.startSelectionInfo!= null){
+        if (playerManager.startSelectionInfo != null) {
             Utils.drawSelectionRectangle(playerManager.startSelectionInfo.startSelectionClientPos, playerManager.mousePos);
         }
     }
@@ -97,17 +99,11 @@ namespace RTS_V2 {
 
     function createUnits(): void {
 
-        let unit0: Unit = new TankUnit("Unit", new ƒ.Vector3(0, 2, 0.1), false);
-        let unit1: Unit = new TankUnit("Unit", new ƒ.Vector3(2, 4, 0.1), false);
-        let unit2: Unit = new TankUnit("Unit", new ƒ.Vector3(0, 0, 0.1));
-        let unit3: Unit = new TankUnit("Unit", new ƒ.Vector3(2, 0, 0.1));
-        let unit4: Unit = new TankUnit("Unit", new ƒ.Vector3(2, 2, 0.1));
-        
+        let unit0: Unit = new TankUnit("TankUnit", new ƒ.Vector3(0, 2, 0.1), false);
+        let unit1: Unit = new TankUnit("TankUnit", new ƒ.Vector3(2, 4, 0.1), false);
+
         gameobjects.appendChild(unit0);
         gameobjects.appendChild(unit1);
-        gameobjects.appendChild(unit2);
-        gameobjects.appendChild(unit3);
-        gameobjects.appendChild(unit4);
     }
 
 

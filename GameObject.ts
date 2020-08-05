@@ -33,6 +33,12 @@ namespace RTS_V2{
                 this.isDead = true;
                 this.healthBar.delete();
                 this.healthBar = null;
+
+                if(this.isPlayer){
+                    playerManager.decreaseUnitCount();
+                } else {
+                    playerManager.increaseUnitsDestroyed();
+                }
             }
         }
 

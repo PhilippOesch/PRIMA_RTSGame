@@ -8,10 +8,10 @@ namespace RTS_V2 {
         constructor(_name: string, _pos: ƒ.Vector3, _isPlayer: boolean = true) {
             super(_name);
             this.isPlayer = _isPlayer;
-            this.collisionRange = 2.5;
+            this.collisionRange = 2;
             this.health = 1;
-            this.armor = 20;
-            this.healthBar = new Healthbar(this, 15, 40);
+            this.armor = 1;
+            this.healthBar = new Healthbar(this, 15, 60);
             this.createNode(_pos);
         }
 
@@ -31,6 +31,22 @@ namespace RTS_V2 {
             this.addComponent(cmpMesh);
             this.addComponent(cmpMaterial);
             this.addComponent(cmpTransform);
+
+            console.log("base pos:" + this.mtxWorld.translation.copy);
+        }
+
+        public calculateDamage(_bullet: Bullet): void {
+            this.health -= (_bullet.damage / this.armor);
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+
+                let eventEngGame: CustomEvent = new CustomEvent("endGame", {bubbles: true});
+                aiManager.dispatchEvent(eventEngGame);
+            }
         }
     }
 }

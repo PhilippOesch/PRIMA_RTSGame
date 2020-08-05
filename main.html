@@ -9,47 +9,9 @@
     <script src="./FudgeUserInterface/FudgeUserInterface.js"></script>
     <script src="RealTimeStrategie.js"></script>
     <title>Real Time Strategie Game</title>
-    <style>
-        body,
-        html {
-            height: 100%;
-            margin: 0px;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        canvas {
-            flex-grow: 1;
-        }
-
-        img {
-            display: none;
-        }
-
-        progress {
-            position: absolute;
-            width: 30px;
-            height: 15px;
-            z-index: 10;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        progress::-webkit-progress-bar {
-            background: white;
-        }
-
-        .enemy::-webkit-progress-value {
-            background: red;
-        }
-
-        .player::-webkit-progress-value {
-            background: blue;
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="dist/style.css">
 </head>
 
 <body>
@@ -62,12 +24,25 @@
     <img id="enemytank" src="assets/textures/tankRed_outline.png" crossorigin="anonymous">
     <img id="enemybarrel" src="assets/textures/barrelRed_outline.png" crossorigin="anonymous">
     <img id="base" src="assets/textures/scifiStructure_04.png" crossorigin="anonymous">
+    <div class="head">
+        <div class="coin-count-container">
+            <h2>Coins:</h2>
+            <h1 id="coins">0</h1>
+        </div>
+        <div class="unit-count-container">
+            <h2>Units:</h2>
+            <h1><span id="unit-count">0</span> /15</h1>
+        </div>
+        <div class="units-destoyed-count-container">
+            <h2>Enemy Units Destroyed:</h2>
+            <h1 id="units-destoyed">0</h1>
+        </div>
+    </div>
+    <div id="buymenu">
+        <h3>BUY MENU</h3>
+        <button id="buy-tank-btn">Buy Tank (10 Coins)</button>
+    </div>
     <canvas></canvas>
-    <!-- <template>
-        <custom-healtbar>
-            <progress key="health" label="hit" value="0" disabled min="0" max="100"></progress>
-        </custom-healtbar>
-    </template> -->
 </body>
 
 </html>

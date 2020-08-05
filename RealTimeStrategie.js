@@ -1,11 +1,36 @@
 "use strict";
 var RTS_V2;
 (function (RTS_V2) {
+    // enum AIState{
+    //     DEFENSIVE,
+    //     OFFENSIVE
+    // }
+    class AIManager extends ƒ.Node {
+        constructor() {
+            super("AIManager");
+            this.endGameHandler = (_event) => {
+                console.log("End Game");
+            };
+            this.addEventListener("endGame", this.endGameHandler);
+            this.createBase();
+        }
+        createBase() {
+            let pos = new ƒ.Vector3(+(RTS_V2.terrainX / 2) - 5, 0, 0.1);
+            this.base = new RTS_V2.Base("enemyBase", pos, false);
+            RTS_V2.gameobjects.appendChild(this.base);
+        }
+    }
+    RTS_V2.AIManager = AIManager;
+})(RTS_V2 || (RTS_V2 = {}));
+var RTS_V2;
+(function (RTS_V2) {
     var ƒ = FudgeCore;
     let AUDIO;
     (function (AUDIO) {
         AUDIO["SHOOT"] = "assets/sounds/shooting-sound.ogg";
         AUDIO["IMPACT"] = "assets/sounds/impact-sound.ogg";
+        AUDIO["BUYSUCCESS"] = "assets/sounds/hjm-coin_clicker_1.wav";
+        AUDIO["BUYERROR"] = "assets/sounds/error_006.ogg";
     })(AUDIO = RTS_V2.AUDIO || (RTS_V2.AUDIO = {}));
     class Audio extends ƒ.Node {
         static start() {
@@ -22,8 +47,12 @@ var RTS_V2;
         static async appendAudio() {
             Audio.components.set(AUDIO.SHOOT, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.SHOOT), false, false));
             Audio.components.set(AUDIO.IMPACT, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.IMPACT), false, false));
+            Audio.components.set(AUDIO.BUYSUCCESS, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.BUYSUCCESS), false, false));
+            Audio.components.set(AUDIO.BUYERROR, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.BUYERROR), false, false));
             Audio.components.get(AUDIO.SHOOT).volume = 0.5;
             Audio.components.get(AUDIO.IMPACT).volume = 0.5;
+            Audio.components.get(AUDIO.BUYSUCCESS).volume = 0.5;
+            Audio.components.get(AUDIO.BUYERROR).volume = 0.5;
             Audio.components.forEach(value => Audio.node.addComponent(value));
         }
     }
@@ -57,6 +86,12 @@ var RTS_V2;
                 this.isDead = true;
                 this.healthBar.delete();
                 this.healthBar = null;
+                if (this.isPlayer) {
+                    RTS_V2.playerManager.decreaseUnitCount();
+                }
+                else {
+                    RTS_V2.playerManager.increaseUnitsDestroyed();
+                }
             }
         }
         getTextureMaterial(_img) {
@@ -78,10 +113,10 @@ var RTS_V2;
         constructor(_name, _pos, _isPlayer = true) {
             super(_name);
             this.isPlayer = _isPlayer;
-            this.collisionRange = 2.5;
+            this.collisionRange = 2;
             this.health = 1;
-            this.armor = 20;
-            this.healthBar = new RTS_V2.Healthbar(this, 15, 40);
+            this.armor = 1;
+            this.healthBar = new RTS_V2.Healthbar(this, 15, 60);
             this.createNode(_pos);
         }
         static loadImage() {
@@ -97,6 +132,19 @@ var RTS_V2;
             this.addComponent(cmpMesh);
             this.addComponent(cmpMaterial);
             this.addComponent(cmpTransform);
+            console.log("base pos:" + this.mtxWorld.translation.copy);
+        }
+        calculateDamage(_bullet) {
+            this.health -= (_bullet.damage / this.armor);
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+                let eventEngGame = new CustomEvent("endGame", { bubbles: true });
+                RTS_V2.aiManager.dispatchEvent(eventEngGame);
+            }
         }
     }
     RTS_V2.Base = Base;
@@ -170,15 +218,59 @@ var RTS_V2;
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
+    class BuyKontextMenu {
+        constructor(_playermanager) {
+            this.isActive = false;
+            this.buyTank = () => {
+                if (this.playermanager.coins >= 10 && this.playermanager.unitcount < 15) {
+                    this.playermanager.coins -= 10;
+                    this.playermanager.spawnTank();
+                    console.log("Tank gekauft");
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYSUCCESS);
+                }
+                else {
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYERROR);
+                }
+            };
+            this.playermanager = _playermanager;
+            this.kontextMenuElement = document.querySelector("#buymenu");
+            this.buyTankElement = document.querySelector("#buy-tank-btn");
+            this.buyTankElement.addEventListener("click", this.buyTank);
+            // let camera: ƒ.ComponentCamera = viewport.camera;
+            // let basePos: ƒ.Vector3 = this.playermanager.base.mtxLocal.translation.copy;
+            // let projection: ƒ.Vector3 = camera.project(basePos);
+            // let screenPos: ƒ.Vector2 = viewport.pointClipToClient(projection.toVector2());
+            // console.log("Base Pos: " + this.playermanager.base.mtxLocal.translation.copy);
+            // console.log("relative Base Pos: " + projection);
+            // console.log("Screen X: " + screenPos.x + ", Screen Y: " + screenPos.y);
+            // this.kontextMenuElement.style.left = screenPos.x + "px";
+            // this.kontextMenuElement.style.top = screenPos.y + "px";
+        }
+        toggleMenu() {
+            if (this.isActive) {
+                this.kontextMenuElement.style.display = "none";
+            }
+            else {
+                this.kontextMenuElement.style.display = "block";
+            }
+            this.isActive = !this.isActive;
+        }
+    }
+    RTS_V2.BuyKontextMenu = BuyKontextMenu;
+})(RTS_V2 || (RTS_V2 = {}));
+var RTS_V2;
+(function (RTS_V2) {
     class Flock {
         constructor(_unit) {
             this.neighborRadius = 5;
             this.avoidanceRadius = 1.3;
+            this.avoidanceRadiusBase = 1.7;
             this.moveweight = 0.4;
             this.avoidanceWeight = 0.6;
             this.unit = _unit;
             this.squareNeighborRadius = this.neighborRadius ** 2;
             this.squareAvoidanceRadius = this.avoidanceRadius ** 2;
+            this.squareAvoidanceRadiusBase = this.avoidanceRadiusBase ** 2;
         }
         calculateMove(_move) {
             let move = ƒ.Vector3.ZERO();
@@ -191,6 +283,7 @@ var RTS_V2;
             weightedMove = this.partialNormalization(weightedMove, this.moveweight);
             move.add(avoidanceMove);
             move.add(weightedMove);
+            move.z = 0;
             return move;
         }
         avoidance(_node, _neighbors) {
@@ -202,6 +295,11 @@ var RTS_V2;
             for (let element of _neighbors) {
                 let distanceVector = ƒ.Vector3.DIFFERENCE(element.mtxWorld.translation, _node.mtxWorld.translation);
                 if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius) {
+                    let avoidVector = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
+                    avoidanceMove.add(avoidVector);
+                    nAvoide++;
+                }
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadiusBase && (element == RTS_V2.playerManager.base || element == RTS_V2.aiManager.base)) {
                     let avoidVector = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
                     avoidanceMove.add(avoidVector);
                     nAvoide++;
@@ -264,18 +362,9 @@ var RTS_V2;
             //this.uiController = new ƒUi.Controller(this, this.element);
             ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
         }
-        // public getMutator(): ƒ.Mutator {
-        //     let mutator: ƒ.Mutator = {};
-        //     this.updateMutator(mutator);
-        //     return mutator;
-        // }
-        // public updateMutator(_mutator: ƒ.Mutator): void {
-        //     _mutator.health = this.health;
-        //     //console.log(this.health);
-        // }
         update() {
             let camera = RTS_V2.viewport.camera;
-            let projection = camera.project(this.unit.mtxWorld.translation.copy);
+            let projection = camera.project(this.unit.mtxLocal.translation.copy);
             projection.add(ƒ.Vector3.Y(0.1));
             let screenPos = RTS_V2.viewport.pointClipToClient(projection.toVector2());
             this.element.style.left = (screenPos.x - this.elementWidth / 2) + "px";
@@ -322,12 +411,13 @@ var RTS_V2;
         cmpCamera.pivot.translate(ƒ.Vector3.Z(35));
         let cameraLookAt = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
-        cmpCamera.backgroundColor = ƒ.Color.CSS("white");
+        cmpCamera.backgroundColor = ƒ.Color.CSS("#cccccc");
         RTS_V2.viewport = new ƒ.Viewport();
         RTS_V2.viewport.initialize("Viewport", graph, cmpCamera, canvas);
         //setup AudioNode
         RTS_V2.Audio.start();
         RTS_V2.playerManager = new RTS_V2.PlayerManager();
+        RTS_V2.aiManager = new RTS_V2.AIManager();
         createUnits();
         ƒ.Debug.log(RTS_V2.viewport);
         ƒ.Debug.log(graph);
@@ -337,7 +427,6 @@ var RTS_V2;
     }
     function update() {
         RTS_V2.viewport.draw();
-        console.log(RTS_V2.playerManager.startSelectionInfo);
         if (RTS_V2.playerManager.startSelectionInfo != null) {
             RTS_V2.Utils.drawSelectionRectangle(RTS_V2.playerManager.startSelectionInfo.startSelectionClientPos, RTS_V2.playerManager.mousePos);
         }
@@ -357,23 +446,22 @@ var RTS_V2;
         return terrain;
     }
     function createUnits() {
-        let unit0 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(0, 2, 0.1), false);
-        let unit1 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(2, 4, 0.1), false);
-        let unit2 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(0, 0, 0.1));
-        let unit3 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(2, 0, 0.1));
-        let unit4 = new RTS_V2.TankUnit("Unit", new ƒ.Vector3(2, 2, 0.1));
+        let unit0 = new RTS_V2.TankUnit("TankUnit", new ƒ.Vector3(0, 2, 0.1), false);
+        let unit1 = new RTS_V2.TankUnit("TankUnit", new ƒ.Vector3(2, 4, 0.1), false);
         RTS_V2.gameobjects.appendChild(unit0);
         RTS_V2.gameobjects.appendChild(unit1);
-        RTS_V2.gameobjects.appendChild(unit2);
-        RTS_V2.gameobjects.appendChild(unit3);
-        RTS_V2.gameobjects.appendChild(unit4);
     }
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
     var ƒ = FudgeCore;
-    class PlayerManager {
+    class PlayerManager extends ƒ.Node {
         constructor() {
+            super("player Manager");
+            this.coins = 0;
+            this.unitcount = 0;
+            this.unitsDestroyed = 0;
+            this.coinRate = 300;
             this.pointerUp = (_event) => {
                 _event.preventDefault();
                 let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
@@ -381,20 +469,34 @@ var RTS_V2;
                 if (_event.which == 1) {
                     let endPos = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
                     let playerunits = RTS_V2.Utils.getUnits();
-                    this.selectedUnits = RTS_V2.Utils.selectUnits(this.startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
-                    console.log(this.selectedUnits);
+                    let distanceVector = ƒ.Vector3.DIFFERENCE(this.startSelectionInfo.startSelectionPos, endPos);
+                    console.log(distanceVector);
+                    if (distanceVector.magnitudeSquared < 1 && this.base.isInPickingRange(ray)) {
+                        this.buyMenu.toggleMenu();
+                    }
+                    else {
+                        this.selectedUnits = RTS_V2.Utils.selectUnits(this.startSelectionInfo.startSelectionPos, endPos, ray, playerunits);
+                        console.log(this.selectedUnits);
+                        if (this.buyMenu.isActive)
+                            this.buyMenu.toggleMenu();
+                    }
                 }
                 this.startSelectionInfo = null;
+            };
+            this.coinTimerHandler = () => {
+                this.coins++;
+                this.timerHTMLElement.innerHTML = this.coins + "";
             };
             this.pointerDown = (_event) => {
                 let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
                 let ray = RTS_V2.viewport.getRayFromClient(posMouse);
                 let position = ray.intersectPlane(new ƒ.Vector3(0, 0, 0.1), ƒ.Vector3.Z(1));
+                let isInsideTerrain = (Math.abs(position.x) < (RTS_V2.terrainX / 2 - 0.5) && Math.abs(position.y) < (RTS_V2.terrainY / 2 - 0.5));
                 if (_event.which == 1) { //Left Mouse Click
                     this.mousePos = posMouse;
                     this.startSelectionInfo = { startSelectionPos: position, startSelectionClientPos: posMouse };
                 }
-                else if (_event.which == 3 && this.selectedUnits.length != 0) {
+                else if (_event.which == 3 && this.selectedUnits.length != 0 && isInsideTerrain) {
                     RTS_V2.Utils.commandUnits(this.selectedUnits, position, ray);
                 }
                 else {
@@ -406,12 +508,41 @@ var RTS_V2;
                 this.mousePos = posMouse;
             };
             this.createBase();
+            this.startCoinTimer();
             RTS_V2.viewport.addEventListener("\u0192pointerdown" /* DOWN */, this.pointerDown);
             RTS_V2.viewport.addEventListener("\u0192pointerup" /* UP */, this.pointerUp);
             RTS_V2.viewport.addEventListener("\u0192pointermove" /* MOVE */, this.pointerMove);
             RTS_V2.viewport.activatePointerEvent("\u0192pointerdown" /* DOWN */, true);
             RTS_V2.viewport.activatePointerEvent("\u0192pointerup" /* UP */, true);
             RTS_V2.viewport.activatePointerEvent("\u0192pointermove" /* MOVE */, true);
+            this.buyMenu = new RTS_V2.BuyKontextMenu(this);
+            this.unitsDestroyedHTMLElement = document.querySelector("#units-destoyed");
+            this.unitCountHTMLElement = document.querySelector("#unit-count");
+            console.log(this.buyMenu);
+        }
+        startCoinTimer() {
+            this.timerHTMLElement = document.querySelector("#coins");
+            this.coinTimer = new ƒ.Timer(ƒ.Time.game, this.coinRate, 0, this.coinTimerHandler);
+            console.log(this.coinTimer);
+        }
+        spawnTank() {
+            this.increaseUnitCount();
+            let spawnPos = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit = new RTS_V2.TankUnit("TankUnit", spawnPos);
+            RTS_V2.gameobjects.appendChild(newUnit);
+        }
+        increaseUnitsDestroyed() {
+            this.unitsDestroyed++;
+            this.unitsDestroyedHTMLElement.innerHTML = this.unitsDestroyed + "";
+        }
+        increaseUnitCount() {
+            this.unitcount++;
+            this.unitCountHTMLElement.innerHTML = this.unitcount + "";
+        }
+        decreaseUnitCount() {
+            this.unitcount--;
+            this.unitCountHTMLElement.innerHTML = this.unitcount + "";
         }
         createBase() {
             let pos = new ƒ.Vector3(-(RTS_V2.terrainX / 2) + 5, 0, 0.1);
@@ -606,7 +737,17 @@ var RTS_V2;
             _node.mtxLocal.rotate(new ƒ.Vector3(0, 90, 90));
         }
         Utils.adjustLookAtToGameworld = adjustLookAtToGameworld;
-        function createTargetPosArray(_pos, _distance, _positionCount) {
+        function createUnitPositions(_startPos, _ringDistancesArray, _ringPosCountArray) {
+            let positionArray = new Array();
+            positionArray.push(_startPos);
+            for (let i = 0; i < _ringDistancesArray.length; i++) {
+                let ringPosArray = Utils.createUnitRingPosArray(_startPos, _ringDistancesArray[i], _ringPosCountArray[i]);
+                positionArray = positionArray.concat(ringPosArray);
+            }
+            return positionArray;
+        }
+        Utils.createUnitPositions = createUnitPositions;
+        function createUnitRingPosArray(_pos, _distance, _positionCount) {
             let targetPosArray = new Array();
             for (let i = 0; i < _positionCount; i++) {
                 let angle = i * (360 / _positionCount);
@@ -615,13 +756,17 @@ var RTS_V2;
                 dir.normalize(_distance);
                 let position = _pos.copy;
                 position.add(dir);
-                targetPosArray.push(position);
+                let isInsideTerrain = (Math.abs(position.x) < (RTS_V2.terrainX / 2 - 0.5) && Math.abs(position.y) < (RTS_V2.terrainY / 2 - 0.5));
+                if (isInsideTerrain) {
+                    targetPosArray.push(position);
+                }
             }
             return targetPosArray;
         }
-        Utils.createTargetPosArray = createTargetPosArray;
+        Utils.createUnitRingPosArray = createUnitRingPosArray;
         function commandUnits(_selectedunits, _pos, _ray) {
-            let targetPosArray = Utils.createTargetPosArray(_pos, 1.5, _selectedunits.length);
+            let targetPosArray = Utils.createUnitPositions(_pos, [2, 4, 6], [5, 10, 20]);
+            // let targetPosArray: ƒ.Vector3[] = Utils.createUnitRingPosArray(_pos, 1.5, _selectedunits.length);
             let enemySelected = null;
             let enemies = getGameObjects(false);
             for (let enemy of enemies) {

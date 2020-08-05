@@ -3,7 +3,9 @@ namespace RTS_V2 {
 
     export enum AUDIO {
         SHOOT = "assets/sounds/shooting-sound.ogg",
-        IMPACT = "assets/sounds/impact-sound.ogg"
+        IMPACT = "assets/sounds/impact-sound.ogg",
+        BUYSUCCESS = "assets/sounds/hjm-coin_clicker_1.wav",
+        BUYERROR = "assets/sounds/error_006.ogg"
     }
 
     export class Audio extends ƒ.Node {
@@ -27,9 +29,13 @@ namespace RTS_V2 {
         private static async appendAudio(): Promise<void> {
             Audio.components.set(AUDIO.SHOOT, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.SHOOT), false, false));
             Audio.components.set(AUDIO.IMPACT, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.IMPACT), false, false));
+            Audio.components.set(AUDIO.BUYSUCCESS, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.BUYSUCCESS), false, false));
+            Audio.components.set(AUDIO.BUYERROR, new ƒ.ComponentAudio(await ƒ.Audio.load(AUDIO.BUYERROR), false, false));
 
             Audio.components.get(AUDIO.SHOOT).volume = 0.5;
             Audio.components.get(AUDIO.IMPACT).volume = 0.5;
+            Audio.components.get(AUDIO.BUYSUCCESS).volume = 0.5;
+            Audio.components.get(AUDIO.BUYERROR).volume = 0.5;
 
             Audio.components.forEach(value => Audio.node.addComponent(value));
         }

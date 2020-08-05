@@ -34,20 +34,9 @@ namespace RTS_V2 {
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
         }
 
-        // public getMutator(): ƒ.Mutator {
-        //     let mutator: ƒ.Mutator = {};
-        //     this.updateMutator(mutator);
-        //     return mutator;
-        // }
-
-        // public updateMutator(_mutator: ƒ.Mutator): void {
-        //     _mutator.health = this.health;
-        //     //console.log(this.health);
-        // }
-
         public update(): void {
             let camera: ƒ.ComponentCamera = viewport.camera;
-            let projection: ƒ.Vector3 = camera.project(this.unit.mtxWorld.translation.copy);
+            let projection: ƒ.Vector3 = camera.project(this.unit.mtxLocal.translation.copy);
             projection.add(ƒ.Vector3.Y(0.1));
             let screenPos: ƒ.Vector2 = viewport.pointClipToClient(projection.toVector2());
             this.element.style.left = (screenPos.x - this.elementWidth / 2) + "px";
