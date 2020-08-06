@@ -17,10 +17,25 @@ namespace RTS_V2 {
         private unitsDestroyedHTMLElement: HTMLElement;
         private buyMenu: BuyKontextMenu;
 
+        private spawnPointArray: ƒ.Vector3[];
+        private spawnpointIndex: number = 0;
+
         constructor() {
             super("player Manager");
             this.createBase();
             this.startCoinTimer();
+
+            this.spawnPointArray = new Array<ƒ.Vector3>();
+            let spawnPoint1: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint1.add(new ƒ.Vector3(-1, -3, 0));
+            let spawnPoint2: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint2.add(new ƒ.Vector3(0, -3, 0));
+            let spawnPoint3: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint3.add(new ƒ.Vector3(1, -3, 0));
+            this.spawnPointArray.push(spawnPoint1, spawnPoint2, spawnPoint3);
+
+            document.addEventListener("keydown", this.keyboardControls);
+
             viewport.addEventListener(ƒ.EVENT_POINTER.DOWN, this.pointerDown);
             viewport.addEventListener(ƒ.EVENT_POINTER.UP, this.pointerUp);
             viewport.addEventListener(ƒ.EVENT_POINTER.MOVE, this.pointerMove);
@@ -36,6 +51,14 @@ namespace RTS_V2 {
 
             this.addEventListener("gameWon", this.gameWonHandler);
             this.addEventListener("gameLost", this.gameLostHandler);
+        }
+
+        public keyboardControls = (_event: KeyboardEvent): void => {
+            switch (_event.code) {
+                case ƒ.KEYBOARD_CODE.A:
+                    this.selectedUnits = Utils.selectAllPlayerUnits();
+                    break;
+            }
         }
 
         public gameWonHandler = (_event: Event): void => {
@@ -93,24 +116,24 @@ namespace RTS_V2 {
 
         public spawnTank(): void {
             this.increaseUnitCount();
-            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
-            spawnPos.add(ƒ.Vector3.Y(-3));
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
             let newUnit: TankUnit = new TankUnit("Unit", spawnPos);
             gameobjects.appendChild(newUnit);
         }
 
         public spawnSuperTank(): void {
             this.increaseUnitCount();
-            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
-            spawnPos.add(ƒ.Vector3.Y(-3));
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
             let newUnit: SuperTank = new SuperTank("Unit", spawnPos);
             gameobjects.appendChild(newUnit);
         }
 
         public spawnBomber(): void {
             this.increaseUnitCount();
-            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
-            spawnPos.add(ƒ.Vector3.Y(-3));
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
             let newUnit: Bomber = new Bomber("Unit", spawnPos);
             gameobjects.appendChild(newUnit);
         }

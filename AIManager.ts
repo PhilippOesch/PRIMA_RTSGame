@@ -18,10 +18,23 @@ namespace RTS_V2 {
         private coinRate: number = 500;
         private coinTimer: ƒ.Timer;
 
+        private spawnPointArray: ƒ.Vector3[];
+        private spawnpointIndex: number = 0;
+
         constructor() {
             super("AIManager");
             this.createBase();
             this.startCoinTimer();
+
+            this.spawnPointArray = new Array<ƒ.Vector3>();
+            let spawnPoint1: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint1.add(new ƒ.Vector3(-1, -3, 0));
+            let spawnPoint2: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint2.add(new ƒ.Vector3(0, -3, 0));
+            let spawnPoint3: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPoint3.add(new ƒ.Vector3(1, -3, 0));
+            this.spawnPointArray.push(spawnPoint1, spawnPoint2, spawnPoint3);
+
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
         }
 
@@ -42,9 +55,27 @@ namespace RTS_V2 {
         public spawnTank(): void {
             this.unitcount++;
             this.coins -= 10;
-            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
-            spawnPos.add(ƒ.Vector3.Y(-3));
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
             let newUnit: TankUnit = new TankUnit("Unit", spawnPos, false);
+            gameobjects.appendChild(newUnit);
+        }
+
+        public spawnSuperTank(): void {
+            this.unitcount++;
+            this.coins -= 10;
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
+            let newUnit: SuperTank = new SuperTank("Unit", spawnPos, false);
+            gameobjects.appendChild(newUnit);
+        }
+
+        public spawnBomberTank(): void {
+            this.unitcount++;
+            this.coins -= 10;
+            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
+            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
+            let newUnit: Bomber = new Bomber("Unit", spawnPos, false);
             gameobjects.appendChild(newUnit);
         }
 
@@ -54,7 +85,8 @@ namespace RTS_V2 {
 
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
-                let playerUnitsNearBase: Unit[]=  this.getPlayerUnitsNearBase(Utils.getUnits(true));
+                let playerUnitsNearBase: Unit[] = this.getPlayerUnitsNearBase(Utils.getUnits(true));
+                // let playerUnits: Unit[]= 
 
                 if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length == 0) {
                     for (let unit of activeAndNonActiveUnits.nonactiveunits) {

@@ -107,6 +107,14 @@ namespace RTS_V2 {
             return selectedUnits;
         }
 
+        export function selectAllPlayerUnits(): Unit[] {
+            let units: Unit[] = Utils.getUnits();
+            for (let unit of units) {
+                unit.setPicked(true);
+            }
+            return units;
+        }
+
         export function getGameObjects(_isPlayer: boolean = true): Array<GameObject> {
             let array: GameObject[] = gameobjects.getChildren().map(value => <GameObject>value);
             if (_isPlayer) {
@@ -148,8 +156,8 @@ namespace RTS_V2 {
         export function getAirPlanes(): Array<Unit> {
             let array: Unit[] = gameobjects.getChildren().map(value => <Unit>value);
             let plainArray: Unit[] = Array<Unit>();
-            for(let unit of array){
-                if(unit.unitType == UnitType.BOMBER){
+            for (let unit of array) {
+                if (unit.unitType == UnitType.BOMBER) {
                     plainArray.push(unit);
                 }
             }
@@ -161,10 +169,10 @@ namespace RTS_V2 {
             let array: Unit[] = gameobjects.getChildren().map(value => <Unit>value);
             let gameObjectArray: GameObject[] = Array<GameObject>();
 
-            for(let unit of array){
-                if(unit.unitType != 2){
+            for (let unit of array) {
+                if (unit.unitType != 2) {
                     gameObjectArray.push(unit);
-                } 
+                }
             }
 
             return gameObjectArray;

@@ -144,7 +144,7 @@ namespace RTS_V2 {
         Unit.unitSettings.set(UnitType.BOMBER, settings.unitValues.bomber);
     }
 
-    function loadGameImages(){
+    function loadGameImages(): void{
         Bullet.loadImages();
         Unit.loadImages();
         TankUnit.loadImages();
