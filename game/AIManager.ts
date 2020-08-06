@@ -20,6 +20,7 @@ namespace RTS_V2 {
 
         private spawnPointArray: ƒ.Vector3[];
         private spawnpointIndex: number = 0;
+        private nextUnit: UnitType;
 
         constructor() {
             super("AIManager");
@@ -81,7 +82,12 @@ namespace RTS_V2 {
 
         public aggressiveAction(): void {
             let units: Unit[] = Utils.getUnits(false);
+            let playerUnits: Unit[] = Utils.getUnits();
             let activeAndNonActiveUnits: { activeunits: Unit[], nonactiveunits: Unit[] };
+
+            if (this.nextUnit == null || this.nextUnit == undefined) {
+                this.nextUnit = this.analysePlayerUnits(playerUnits);
+            }
 
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
@@ -91,7 +97,7 @@ namespace RTS_V2 {
                     for (let unit of activeAndNonActiveUnits.nonactiveunits) {
                         unit.setTarget = playerManager.base;
                     }
-                } else if(activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length > 0){
+                } else if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length > 0) {
                     for (let unit of activeAndNonActiveUnits.nonactiveunits) {
                         unit.setTarget = playerUnitsNearBase[0];
                     }
@@ -162,6 +168,34 @@ namespace RTS_V2 {
                 case AIState.DEFENSIVE:
                     console.log("defensive");
                     break;
+            }
+        }
+
+        private analysePlayerUnits(_units: Unit[]): UnitType {
+            let tanksCount: number = 0;
+            let superTankCount: number = 0;
+            let bomberCount: number = 0;
+
+            for (let unit of _units) {
+                switch (unit.unitType) {
+                    case UnitType.TANK:
+                        tanksCount++;
+                        break;
+                    case UnitType.SUPERTANK:
+                        superTankCount++;
+                        break;
+                    case UnitType.BOMBER:
+                        bomberCount++;
+                        break;
+                }
+            }
+
+            if (superTankCount > bomberCount && superTankCount > tanksCount) {
+                return UnitType.SUPERTANK;
+            } else if (bomberCount > superTankCount && bomberCount > tanksCount) {
+                return UnitType.BOMBER;
+            } else {
+                return UnitType.TANK;
             }
         }
     }
