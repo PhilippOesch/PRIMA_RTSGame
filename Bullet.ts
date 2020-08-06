@@ -4,18 +4,25 @@ namespace RTS_V2 {
 
     export class Bullet extends ƒ.Node {
         public static bulletImg: HTMLImageElement;
+        public static bulletImgEnemy: HTMLImageElement;
 
-        public damage: number = 0.5;
+        public damage: number;
+        public unitType: UnitType;
 
         private target: GameObject;
         private speed: number;
         private collisionActive: boolean = true;
         private textureNode: ƒ.Node;
+        private isPlayer: boolean;
 
-        constructor(_pos: ƒ.Vector3, _target: GameObject, _speed: number = 0.1) {
+        constructor(_pos: ƒ.Vector3, _target: GameObject, _isPlayer: boolean, _unitType: UnitType= UnitType.TANK) {
             super("Bullet");
+            this.unitType = _unitType;
+            let unitSetting: UnitSettings = Unit.unitSettings.get(this.unitType);
             this.target = _target;
-            this.speed = _speed;
+            this.isPlayer = _isPlayer;
+            this.damage = unitSetting.damage;
+            this.speed = unitSetting.bulletspeed;
             this.createNodes(_pos);
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
             Audio.play(AUDIO.SHOOT);
@@ -23,6 +30,7 @@ namespace RTS_V2 {
 
         public static loadImages(): void {
             Bullet.bulletImg = document.querySelector("#tankbullet");
+            Bullet.bulletImgEnemy = document.querySelector("#tankbulletenemy");
         }
 
         public update(): void {
@@ -43,12 +51,19 @@ namespace RTS_V2 {
         }
 
         private createNodes(_pos: ƒ.Vector3): void {
-            let mtr: ƒ.Material = this.getTextureMaterial("BulletMtr", Bullet.bulletImg);
+            let mtr: ƒ.Material;
+
+            if (this.isPlayer) {
+                mtr = this.getTextureMaterial("BulletMtr", Bullet.bulletImg);
+            } else {
+                mtr = this.getTextureMaterial("BulletMtr", Bullet.bulletImgEnemy);
+            }
+            
             let mesh: ƒ.MeshSprite = new ƒ.MeshSprite();
 
             let cmpTransform: ƒ.ComponentTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(_pos));
 
-            this.textureNode= new ƒAid.Node("Bullet Texture Node", ƒ.Matrix4x4.IDENTITY(), mtr, mesh);
+            this.textureNode = new ƒAid.Node("Bullet Texture Node", ƒ.Matrix4x4.IDENTITY(), mtr, mesh);
             let cmpMesh: ƒ.ComponentMesh = this.textureNode.getComponent(ƒ.ComponentMesh);
             cmpMesh.pivot.scale(new ƒ.Vector3(0.4, 0.3, 0));
             cmpMesh.pivot.rotateZ(90);

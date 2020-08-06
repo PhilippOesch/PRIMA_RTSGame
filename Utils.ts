@@ -125,7 +125,7 @@ namespace RTS_V2 {
         }
 
         export function getUnits(_isPlayer: boolean = true): Array<Unit> {
-            let array: Unit[] = gameobjects.getChildren().map(value => <Unit>value);
+            let array: Unit[] = gameobjects.getChildrenByName("Unit").map(value => <Unit>value);
             if (_isPlayer) {
                 return array.filter((value) => {
                     if (value.isPlayer)
@@ -143,6 +143,31 @@ namespace RTS_V2 {
 
         export function getAllGameObjects(): Array<GameObject> {
             return gameobjects.getChildren().map(value => <GameObject>value);
+        }
+
+        export function getAirPlanes(): Array<Unit> {
+            let array: Unit[] = gameobjects.getChildren().map(value => <Unit>value);
+            let plainArray: Unit[] = Array<Unit>();
+            for(let unit of array){
+                if(unit.unitType == UnitType.BOMBER){
+                    plainArray.push(unit);
+                }
+            }
+
+            return plainArray;
+        }
+
+        export function getAllButAirPlains(): GameObject[] {
+            let array: Unit[] = gameobjects.getChildren().map(value => <Unit>value);
+            let gameObjectArray: GameObject[] = Array<GameObject>();
+
+            for(let unit of array){
+                if(unit.unitType != 2){
+                    gameObjectArray.push(unit);
+                } 
+            }
+
+            return gameObjectArray;
         }
 
         export function drawSelectionRectangle(_startClient: ƒ.Vector2, _endClient: ƒ.Vector2): void {

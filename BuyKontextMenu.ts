@@ -5,12 +5,18 @@ namespace RTS_V2 {
         private playermanager: PlayerManager;
         private kontextMenuElement: HTMLElement;
         private buyTankElement: HTMLElement;
+        private buySuperTankElement: HTMLElement;
+        private buyBomberElement: HTMLElement;
 
         constructor(_playermanager: PlayerManager) {
             this.playermanager = _playermanager;
             this.kontextMenuElement = document.querySelector("#buymenu");
             this.buyTankElement = document.querySelector("#buy-tank-btn");
+            this.buySuperTankElement = document.querySelector("#buy-supertank-btn");
+            this.buyBomberElement = document.querySelector("#buy-bomber-btn");
+            this.buySuperTankElement.addEventListener("click", this.buySuperTank);
             this.buyTankElement.addEventListener("click", this.buyTank);
+            this.buyBomberElement.addEventListener("click", this.buyBomber);
 
             // let camera: ƒ.ComponentCamera = viewport.camera;
 
@@ -38,7 +44,29 @@ namespace RTS_V2 {
             if (this.playermanager.coins >= 10 && this.playermanager.unitcount < unitsPerPlayer) {
                 this.playermanager.coins -= 10;
                 this.playermanager.spawnTank();
-                console.log("Tank gekauft");
+                console.log("Tank buyed");
+                Audio.play(AUDIO.BUYSUCCESS);
+            } else {
+                Audio.play(AUDIO.BUYERROR);
+            }
+        }
+
+        public buySuperTank = (): void => {
+            if (this.playermanager.coins >= 20 && this.playermanager.unitcount < unitsPerPlayer) {
+                this.playermanager.coins -= 20;
+                this.playermanager.spawnSuperTank();
+                console.log("Super Tank buyed");
+                Audio.play(AUDIO.BUYSUCCESS);
+            } else {
+                Audio.play(AUDIO.BUYERROR);
+            }
+        }
+
+        public buyBomber = (): void => {
+            if (this.playermanager.coins >= 15 && this.playermanager.unitcount < unitsPerPlayer) {
+                this.playermanager.coins -= 15;
+                this.playermanager.spawnBomber();
+                console.log("Bomber buyed");
                 Audio.play(AUDIO.BUYSUCCESS);
             } else {
                 Audio.play(AUDIO.BUYERROR);

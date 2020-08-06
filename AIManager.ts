@@ -1,6 +1,7 @@
 namespace RTS_V2 {
 
     import ƒ = FudgeCore;
+
     enum AIState {
         DEFENSIVE,
         AGGRESSIVE
@@ -8,12 +9,13 @@ namespace RTS_V2 {
 
     export class AIManager extends ƒ.Node {
         public base: Base;
+        public nearBaseRadius: number = 7;
         public currentState: AIState = AIState.AGGRESSIVE;
         public selectedUnits: Unit[];
         public coins: number = 0;
         public unitcount: number = 0;
 
-        private coinRate: number = 350;
+        private coinRate: number = 500;
         private coinTimer: ƒ.Timer;
 
         constructor() {
@@ -42,19 +44,28 @@ namespace RTS_V2 {
             this.coins -= 10;
             let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
             spawnPos.add(ƒ.Vector3.Y(-3));
-            let newUnit: TankUnit = new TankUnit("TankUnit", spawnPos, false);
+            let newUnit: TankUnit = new TankUnit("Unit", spawnPos, false);
             gameobjects.appendChild(newUnit);
         }
 
         public aggressiveAction(): void {
             let units: Unit[] = Utils.getUnits(false);
             let activeAndNonActiveUnits: { activeunits: Unit[], nonactiveunits: Unit[] };
+
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
+                let playerUnitsNearBase: Unit[]=  this.getPlayerUnitsNearBase(Utils.getUnits(true));
 
-                for (let unit of activeAndNonActiveUnits.nonactiveunits) {
-                    unit.setTarget = playerManager.base;
+                if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length == 0) {
+                    for (let unit of activeAndNonActiveUnits.nonactiveunits) {
+                        unit.setTarget = playerManager.base;
+                    }
+                } else if(activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length > 0){
+                    for (let unit of activeAndNonActiveUnits.nonactiveunits) {
+                        unit.setTarget = playerUnitsNearBase[0];
+                    }
                 }
+
             }
 
             if (this.coins >= 10 && this.unitcount < unitsPerPlayer) {
@@ -68,14 +79,42 @@ namespace RTS_V2 {
             let nonActiveUnits: Unit[] = new Array<Unit>();
 
             for (let unit of _units) {
-                if (unit.getTarget == null) {
-                    activeUnits.push(unit);
-                } else {
+                if (unit.getTarget == null || unit.getTarget == undefined) {
                     nonActiveUnits.push(unit);
+                } else {
+                    activeUnits.push(unit);
                 }
             }
 
-            return { activeunits: _units, nonactiveunits: _units };
+            return { activeunits: activeUnits, nonactiveunits: nonActiveUnits };
+        }
+
+        private getPlayerUnitsNearBase(_units: Unit[]): Unit[] {
+            let unitsNearBase: Unit[] = new Array<Unit>();
+
+            for (let unit of _units) {
+                let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(unit.mtxWorld.translation, this.base.mtxLocal.translation);
+                let squaredDistance: number = distanceVector.magnitudeSquared;
+
+                if (squaredDistance < this.nearBaseRadius ** 2) {
+                    unitsNearBase.push(unit);
+                }
+            }
+
+            unitsNearBase.sort((a, b) => {
+                let distanceA: number = ƒ.Vector3.DIFFERENCE(a.mtxWorld.translation, this.base.mtxWorld.translation).magnitudeSquared;
+                let distanceB: number = ƒ.Vector3.DIFFERENCE(b.mtxWorld.translation, this.base.mtxWorld.translation).magnitudeSquared;
+
+                if (distanceA < distanceB) {
+                    return -1;
+                }
+                if (distanceA > distanceB) {
+                    return 1;
+                }
+                return 0;
+            })
+
+            return unitsNearBase;
         }
 
         private createBase(): void {

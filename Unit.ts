@@ -2,7 +2,19 @@
 namespace RTS_V2 {
     import ƒ = FudgeCore;
 
+    export enum UnitType {
+        TANK,
+        SUPERTANK,
+        BOMBER
+    }
+
+
     export abstract class Unit extends GameObject {
+        public static selectedImg: HTMLImageElement;
+        public static unitSettings: Map<UnitType, UnitSettings> = new Map<UnitType, UnitSettings>();
+
+        public unitType: UnitType;
+
         protected target: GameObject;
         protected shootingRange: number;
         protected shootingRate: number;
@@ -11,7 +23,12 @@ namespace RTS_V2 {
         protected speed: number = 3 / 1000;
         protected flock: Flock;
 
+        protected bodyNode: ƒ.Node;
         protected healthBar: Healthbar;
+
+        public static loadImages(): void {
+            Unit.selectedImg = document.querySelector("#selected");
+        }
 
         public set setMove(_pos: ƒ.Vector3) {
             this.moveTo = _pos;
@@ -27,6 +44,50 @@ namespace RTS_V2 {
 
         public get getHealth(): number {
             return this.health;
+        }
+
+        public calculateDamage(_bullet: Bullet): void {
+            this.health -= (_bullet.damage / this.armor);
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+
+                this.target = null;
+                this.clearTimer();
+
+                if (this.isPlayer) {
+                    playerManager.decreaseUnitCount();
+                } else {
+                    playerManager.increaseUnitsDestroyed();
+                }
+            }
+        }
+
+
+        public update(): void {
+            let getNeighbors: GameObject[] = this.flock.getNearbyObjects(this);
+            let avoidObjects: GameObject[] = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
+
+            if (this.target != null) {
+                this.attack();
+            } else {
+                this.clearTimer();
+            }
+            if (this.moveTo != null && this.moveTo != undefined) {
+                this.move(this.moveTo);
+
+                //don't ask why! it somehow prevents an error and works
+                if (this.moveTo != null) {
+                    let pointAt: ƒ.Vector3 = this.moveTo.copy;
+                    Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                }
+            } else if (avoidObjects.length > 0) {
+                let moveVector: ƒ.Vector3 = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
+                this.move(moveVector);
+            }
         }
 
         public attack(): void {
@@ -77,7 +138,7 @@ namespace RTS_V2 {
 
         protected shoot = (_node: ƒ.Node, _target: GameObject): void => {
             let startingPos: ƒ.Matrix4x4 = _node.mtxWorld.copy;
-            let bullet: Bullet = new Bullet(startingPos.translation.copy, _target);
+            let bullet: Bullet = new Bullet(startingPos.translation.copy, _target, this.isPlayer, this.unitType);
 
             bullets.appendChild(bullet);
         }

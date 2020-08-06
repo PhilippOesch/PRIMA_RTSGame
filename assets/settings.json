@@ -6,5 +6,31 @@
     "terrain": {
         "terrainX": 30,
         "terrainY": 20
+    },
+    "unitValues": {
+        "tank": {
+            "damage": 1,
+            "health": 1,
+            "armor": 3,
+            "speed": 0.003,
+            "shootingrate": 1500,
+            "bulletspeed": 0.1
+        },
+        "supertank": {
+            "damage": 2,
+            "health": 2,
+            "armor": 3,
+            "speed": 0.002,
+            "shootingrate": 1500,
+            "bulletspeed": 0.15
+        },
+        "bomber": {
+            "damage": 1.5,
+            "health": 1.5,
+            "armor": 2,
+            "speed": 0.004,
+            "shootingrate": 1200,
+            "bulletspeed": 0.18
+        }
     }
 }

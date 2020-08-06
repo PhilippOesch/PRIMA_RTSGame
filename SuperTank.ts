@@ -3,50 +3,43 @@ namespace RTS_V2 {
     import ƒ = FudgeCore;
     import ƒAid = FudgeAid;
 
-    export class TankUnit extends Unit {
-        public static mesh: ƒ.MeshSprite = new ƒ.MeshSprite();
-
+    export class SuperTank extends Unit {
         public static bodyImg: HTMLImageElement;
-        public static enemyBodyImg: HTMLImageElement;
-        public static cannonImg: HTMLImageElement;
-        public static barrelImg: HTMLImageElement;
+        public static playerbarrelImg: HTMLImageElement;
         public static enemyBarrelImg: HTMLImageElement;
-        public static selectedImg: HTMLImageElement;
 
         private cannonNode: ƒ.Node;
         private selected: ƒ.Node;
 
         constructor(_name: string, _pos: ƒ.Vector3, _isPlayer: boolean = true) {
             super(_name);
-            this.unitType = UnitType.TANK;
-            let unitsetting: UnitSettings = Unit.unitSettings.get(this.unitType);
+            this.unitType = UnitType.SUPERTANK;
+            let unitSettings: UnitSettings = Unit.unitSettings.get(this.unitType);
             this.isPlayer = _isPlayer;
-            this.collisionRange = 0.6;
-            this.shootingRange = 5;
-            this.health = unitsetting.health;
-            this.armor = unitsetting.armor;
-            this.shootingRate = unitsetting.shootingrate;
-            this.speed = unitsetting.speed;
-            this.flock = new Flock(this);
+            this.collisionRange = 1;
+            this.shootingRange = 6;
+            this.health = unitSettings.health;
+            this.armor = unitSettings.armor;
+            this.shootingRate = unitSettings.shootingrate;
+            this.speed = unitSettings.speed;
+            this.flock = new Flock(this, 2);
             this.createNodes(_pos);
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
             this.healthBar = new Healthbar(this);
         }
 
         public static loadImages(): void {
-            TankUnit.bodyImg = document.querySelector("#tank");
-            TankUnit.cannonImg = document.querySelector("#cannon");
-            TankUnit.enemyBodyImg = document.querySelector("#enemytank");
-            TankUnit.enemyBarrelImg = document.querySelector("#enemybarrel");
-            TankUnit.barrelImg = document.querySelector("#barrel");
+            SuperTank.bodyImg = document.querySelector("#supertankbody");
+            SuperTank.playerbarrelImg = document.querySelector("#playerSuperTankBarrel");
+            SuperTank.enemyBarrelImg = document.querySelector("#enemySuperTankBarrel");
         }
 
         public calculateDamage(_bullet: Bullet): void {
             let damage: number;
 
-            if(_bullet.unitType == UnitType.SUPERTANK) {
+            if(_bullet.unitType == UnitType.BOMBER) {
                 damage = ((_bullet.damage * 1.5) / this.armor);
-            } else if(_bullet.unitType == UnitType.BOMBER) {
+            } else if(_bullet.unitType == UnitType.TANK) {
                 damage = ((_bullet.damage * 0.5) / this.armor);
             } else {
                 damage = ((_bullet.damage) / this.armor);
@@ -87,45 +80,43 @@ namespace RTS_V2 {
         }
 
         private createNodes(_pos: ƒ.Vector3): void {
-            let cannonMtr: ƒ.Material = this.getTextureMaterial(TankUnit.cannonImg);
+            let mesh: ƒ.MeshSprite = new ƒ.MeshSprite();
+
+            let bodyMtr: ƒ.Material = this.getTextureMaterial(SuperTank.bodyImg);
             let selectedMtr: ƒ.Material = this.getTextureMaterial(Unit.selectedImg);
 
-            let bodyMtr: ƒ.Material;
-            let barrelMtr: ƒ.Material;
+            let cannonMtr: ƒ.Material;
 
             if (this.isPlayer) {
-                bodyMtr = this.getTextureMaterial(TankUnit.bodyImg);
-                barrelMtr = this.getTextureMaterial(TankUnit.barrelImg);
+                cannonMtr = this.getTextureMaterial(SuperTank.playerbarrelImg);
             } else {
-                bodyMtr = this.getTextureMaterial(TankUnit.enemyBodyImg);
-                barrelMtr = this.getTextureMaterial(TankUnit.enemyBarrelImg);
+                cannonMtr = this.getTextureMaterial(SuperTank.enemyBarrelImg);
             }
 
             this.selected = new ƒAid.Node("Unit Selected", ƒ.Matrix4x4.IDENTITY(), selectedMtr, TankUnit.mesh);
             let selectedCmpNode: ƒ.ComponentMesh = this.selected.getComponent(ƒ.ComponentMesh);
-            selectedCmpNode.pivot.scale(ƒ.Vector3.ONE(1.3));
+            selectedCmpNode.pivot.scale(ƒ.Vector3.ONE(2));
 
             let unitCmpTransform: ƒ.ComponentTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(_pos));
             this.addComponent(unitCmpTransform);
 
-            this.bodyNode = new ƒAid.Node("Unit Body", ƒ.Matrix4x4.IDENTITY(), bodyMtr, TankUnit.mesh);
+            this.bodyNode = new ƒAid.Node("Unit Body", ƒ.Matrix4x4.IDENTITY(), bodyMtr, mesh);
             let bodyCmpMesh: ƒ.ComponentMesh = this.bodyNode.getComponent(ƒ.ComponentMesh);
-            bodyCmpMesh.pivot.scale(ƒ.Vector3.ONE());
-            bodyCmpMesh.pivot.rotateZ(90);
+            bodyCmpMesh.pivot.scale(ƒ.Vector3.ONE(1.5));
+            bodyCmpMesh.pivot.rotateZ(270);
 
-            this.cannonNode = new ƒAid.Node("Unit Cannon", ƒ.Matrix4x4.TRANSLATION(ƒ.Vector3.Z(0.12)), cannonMtr, TankUnit.mesh);
-            let cannonCmpMesh: ƒ.ComponentMesh = this.cannonNode.getComponent(ƒ.ComponentMesh);
-            cannonCmpMesh.pivot.scale(ƒ.Vector3.ONE(0.7));
+            this.cannonNode = new ƒ.Node("Unit Cannon");
+            let cmpTransform: ƒ.ComponentTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(ƒ.Vector3.Z(0.12)));
+            this.cannonNode.addComponent(cmpTransform);
 
-            let barrelNode: ƒAid.Node = new ƒAid.Node("Unit Barrel", ƒ.Matrix4x4.TRANSLATION(new ƒ.Vector3(-0.5, 0, 0.11)), barrelMtr, TankUnit.mesh);
+            let barrelNode: ƒAid.Node = new ƒAid.Node("Unit Barrel", ƒ.Matrix4x4.TRANSLATION(new ƒ.Vector3(-0.5, 0, 0.11)), cannonMtr, TankUnit.mesh);
             let barrelCmpMesh: ƒ.ComponentMesh = barrelNode.getComponent(ƒ.ComponentMesh);
-            barrelCmpMesh.pivot.scale(new ƒ.Vector3(0.7, 0.3, 0));
+            barrelCmpMesh.pivot.scale(new ƒ.Vector3(1, 0.5, 0));
             barrelCmpMesh.pivot.rotateZ(90);
 
             this.appendChild(this.bodyNode);
             this.appendChild(this.cannonNode);
             this.cannonNode.appendChild(barrelNode);
-
         }
     }
 }

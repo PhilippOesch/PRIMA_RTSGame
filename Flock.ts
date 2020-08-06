@@ -13,7 +13,9 @@ namespace RTS_V2 {
         squareAvoidanceRadius: number;
         squareAvoidanceRadiusBase: number;
 
-        constructor(_unit: Unit) {
+        constructor(_unit: Unit, _avoidanceRadius: number= 1.3, _avoidanceRadiusBase: number= 1.7) {
+            this.avoidanceRadius = _avoidanceRadius;
+            this.avoidanceRadiusBase = _avoidanceRadiusBase;
             this.unit = _unit;
             this.squareNeighborRadius = this.neighborRadius ** 2;
             this.squareAvoidanceRadius = this.avoidanceRadius ** 2;
@@ -75,7 +77,7 @@ namespace RTS_V2 {
 
         public getNearbyObjects(_node: Unit = this.unit): Array<GameObject> {
             let nearbyObjects: GameObject[] = new Array<GameObject>();
-            let objects: GameObject[] = Utils.getAllGameObjects();
+            let objects: GameObject[] = Utils.getAllButAirPlains();
 
             for (let value of objects) {
                 let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);

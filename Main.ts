@@ -20,6 +20,31 @@ namespace RTS_V2 {
 
     //let mousePos= ƒ.Vector2;
 
+    interface SettingsJSON {
+        general: {
+            unitsPerPlayer: number,
+            cameraDistance: number
+        };
+        terrain: {
+            terrainX: number,
+            terrainY: number
+        };
+        unitValues: {
+            tank: UnitSettings,
+            supertank: UnitSettings,
+            bomber: UnitSettings
+        };
+    }
+
+    export interface UnitSettings{
+        damage: number;
+        health: number;
+        armor: number;
+        speed: number;
+        shootingrate: number;
+        bulletspeed: number;
+    }
+
     ƒ.RenderManager.initialize(true, false);
 
     window.addEventListener("load", hndLoad);
@@ -33,9 +58,7 @@ namespace RTS_V2 {
         //prevents the context menu to open
         canvas.addEventListener("contextmenu", event => event.preventDefault());
 
-        Bullet.loadImages();
-        TankUnit.loadImages();
-        Base.loadImage();
+        loadGameImages();
 
         let graph: ƒ.Node = new ƒ.Node("Game");
         let terrain: ƒAid.Node = createTerrainNode(backgroundImg);
@@ -105,16 +128,29 @@ namespace RTS_V2 {
         return terrain;
     }
 
-    function loadSettings(): void{
+    function loadSettings(): void {
         let file: XMLHttpRequest = new XMLHttpRequest();
         file.open("GET", "./assets/settings.json", false);
         file.send();
-        let settings: any = JSON.parse(file.response);
+        let settings: SettingsJSON = JSON.parse(file.response);
 
         terrainX = settings.terrain.terrainX;
         terrainY = settings.terrain.terrainY;
         unitsPerPlayer = settings.general.unitsPerPlayer;
         cameraDistance = settings.general.cameraDistance;
+
+        Unit.unitSettings.set(UnitType.TANK, settings.unitValues.tank);
+        Unit.unitSettings.set(UnitType.SUPERTANK, settings.unitValues.supertank);
+        Unit.unitSettings.set(UnitType.BOMBER, settings.unitValues.bomber);
+    }
+
+    function loadGameImages(){
+        Bullet.loadImages();
+        Unit.loadImages();
+        TankUnit.loadImages();
+        Base.loadImage();
+        SuperTank.loadImages();
+        Bomber.loadImages();
     }
 
 }

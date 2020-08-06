@@ -3,6 +3,20 @@ body, html{
     height: 100%;
     margin: 0;
     font-family: Montserrat;
+}
+
+.lost-game{
+    background-color: #395709 !important;
+    color: white;
+}
+
+.lost-game.endscreen-container h1 #endscreen-title {
+    color: white !important;
+}
+
+.background{
+    width: 100%;
+    height: 100%;
     background-color: #80BE1F;
 }
 
@@ -15,6 +29,8 @@ body, html{
 }
 
 h1{
+    padding-top: 2rem;
+    margin-top: 0;
     font-size: 28pt;
     color: black;
 }

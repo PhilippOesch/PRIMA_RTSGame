@@ -39,6 +39,10 @@ progress::-webkit-progress-bar {
     background: blue;
 }
 
+.player{
+    z-index: 11;
+}
+
 .head{
     position: absolute;
     left: 10px;

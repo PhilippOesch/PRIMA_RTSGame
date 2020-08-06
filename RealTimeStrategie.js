@@ -10,10 +10,11 @@ var RTS_V2;
     class AIManager extends ƒ.Node {
         constructor() {
             super("AIManager");
+            this.nearBaseRadius = 7;
             this.currentState = AIState.AGGRESSIVE;
             this.coins = 0;
             this.unitcount = 0;
-            this.coinRate = 350;
+            this.coinRate = 500;
             this.coinTimerHandler = () => {
                 this.coins++;
             };
@@ -33,7 +34,7 @@ var RTS_V2;
             this.coins -= 10;
             let spawnPos = this.base.mtxLocal.translation.copy;
             spawnPos.add(ƒ.Vector3.Y(-3));
-            let newUnit = new RTS_V2.TankUnit("TankUnit", spawnPos, false);
+            let newUnit = new RTS_V2.TankUnit("Unit", spawnPos, false);
             RTS_V2.gameobjects.appendChild(newUnit);
         }
         aggressiveAction() {
@@ -41,8 +42,16 @@ var RTS_V2;
             let activeAndNonActiveUnits;
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
-                for (let unit of activeAndNonActiveUnits.nonactiveunits) {
-                    unit.setTarget = RTS_V2.playerManager.base;
+                let playerUnitsNearBase = this.getPlayerUnitsNearBase(RTS_V2.Utils.getUnits(true));
+                if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length == 0) {
+                    for (let unit of activeAndNonActiveUnits.nonactiveunits) {
+                        unit.setTarget = RTS_V2.playerManager.base;
+                    }
+                }
+                else if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length > 0) {
+                    for (let unit of activeAndNonActiveUnits.nonactiveunits) {
+                        unit.setTarget = playerUnitsNearBase[0];
+                    }
                 }
             }
             if (this.coins >= 10 && this.unitcount < RTS_V2.unitsPerPlayer) {
@@ -54,14 +63,36 @@ var RTS_V2;
             let activeUnits = new Array();
             let nonActiveUnits = new Array();
             for (let unit of _units) {
-                if (unit.getTarget == null) {
-                    activeUnits.push(unit);
-                }
-                else {
+                if (unit.getTarget == null || unit.getTarget == undefined) {
                     nonActiveUnits.push(unit);
                 }
+                else {
+                    activeUnits.push(unit);
+                }
             }
-            return { activeunits: _units, nonactiveunits: _units };
+            return { activeunits: activeUnits, nonactiveunits: nonActiveUnits };
+        }
+        getPlayerUnitsNearBase(_units) {
+            let unitsNearBase = new Array();
+            for (let unit of _units) {
+                let distanceVector = ƒ.Vector3.DIFFERENCE(unit.mtxWorld.translation, this.base.mtxLocal.translation);
+                let squaredDistance = distanceVector.magnitudeSquared;
+                if (squaredDistance < this.nearBaseRadius ** 2) {
+                    unitsNearBase.push(unit);
+                }
+            }
+            unitsNearBase.sort((a, b) => {
+                let distanceA = ƒ.Vector3.DIFFERENCE(a.mtxWorld.translation, this.base.mtxWorld.translation).magnitudeSquared;
+                let distanceB = ƒ.Vector3.DIFFERENCE(b.mtxWorld.translation, this.base.mtxWorld.translation).magnitudeSquared;
+                if (distanceA < distanceB) {
+                    return -1;
+                }
+                if (distanceA > distanceB) {
+                    return 1;
+                }
+                return 0;
+            });
+            return unitsNearBase;
         }
         createBase() {
             let pos = new ƒ.Vector3(+(RTS_V2.terrainX / 2) - 5, 0, 0.1);
@@ -174,7 +205,7 @@ var RTS_V2;
             this.isPlayer = _isPlayer;
             this.collisionRange = 2;
             this.health = 1;
-            this.armor = 20;
+            this.armor = 40;
             this.healthBar = new RTS_V2.Healthbar(this, 15, 60);
             this.createNode(_pos);
         }
@@ -201,8 +232,14 @@ var RTS_V2;
                 this.isDead = true;
                 this.healthBar.delete();
                 this.healthBar = null;
-                let eventEndGame = new CustomEvent("gameWon", { bubbles: true });
-                RTS_V2.playerManager.dispatchEvent(eventEndGame);
+                if (!this.isPlayer) {
+                    let eventEndGame = new CustomEvent("gameWon", { bubbles: true });
+                    RTS_V2.playerManager.dispatchEvent(eventEndGame);
+                }
+                else {
+                    let eventEndGame = new CustomEvent("gameLost", { bubbles: true });
+                    RTS_V2.playerManager.dispatchEvent(eventEndGame);
+                }
             }
         }
     }
@@ -213,18 +250,22 @@ var RTS_V2;
     var ƒ = FudgeCore;
     var ƒAid = FudgeAid;
     class Bullet extends ƒ.Node {
-        constructor(_pos, _target, _speed = 0.1) {
+        constructor(_pos, _target, _isPlayer, _unitType = RTS_V2.UnitType.TANK) {
             super("Bullet");
-            this.damage = 0.5;
             this.collisionActive = true;
+            this.unitType = _unitType;
+            let unitSetting = RTS_V2.Unit.unitSettings.get(this.unitType);
             this.target = _target;
-            this.speed = _speed;
+            this.isPlayer = _isPlayer;
+            this.damage = unitSetting.damage;
+            this.speed = unitSetting.bulletspeed;
             this.createNodes(_pos);
             ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
             RTS_V2.Audio.play(RTS_V2.AUDIO.SHOOT);
         }
         static loadImages() {
             Bullet.bulletImg = document.querySelector("#tankbullet");
+            Bullet.bulletImgEnemy = document.querySelector("#tankbulletenemy");
         }
         update() {
             let enemyPos = this.target.cmpTransform.local.copy;
@@ -242,7 +283,13 @@ var RTS_V2;
             this.collidingWithEnemy();
         }
         createNodes(_pos) {
-            let mtr = this.getTextureMaterial("BulletMtr", Bullet.bulletImg);
+            let mtr;
+            if (this.isPlayer) {
+                mtr = this.getTextureMaterial("BulletMtr", Bullet.bulletImg);
+            }
+            else {
+                mtr = this.getTextureMaterial("BulletMtr", Bullet.bulletImgEnemy);
+            }
             let mesh = new ƒ.MeshSprite();
             let cmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(_pos));
             this.textureNode = new ƒAid.Node("Bullet Texture Node", ƒ.Matrix4x4.IDENTITY(), mtr, mesh);
@@ -284,7 +331,29 @@ var RTS_V2;
                 if (this.playermanager.coins >= 10 && this.playermanager.unitcount < RTS_V2.unitsPerPlayer) {
                     this.playermanager.coins -= 10;
                     this.playermanager.spawnTank();
-                    console.log("Tank gekauft");
+                    console.log("Tank buyed");
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYSUCCESS);
+                }
+                else {
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYERROR);
+                }
+            };
+            this.buySuperTank = () => {
+                if (this.playermanager.coins >= 20 && this.playermanager.unitcount < RTS_V2.unitsPerPlayer) {
+                    this.playermanager.coins -= 20;
+                    this.playermanager.spawnSuperTank();
+                    console.log("Super Tank buyed");
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYSUCCESS);
+                }
+                else {
+                    RTS_V2.Audio.play(RTS_V2.AUDIO.BUYERROR);
+                }
+            };
+            this.buyBomber = () => {
+                if (this.playermanager.coins >= 15 && this.playermanager.unitcount < RTS_V2.unitsPerPlayer) {
+                    this.playermanager.coins -= 15;
+                    this.playermanager.spawnBomber();
+                    console.log("Bomber buyed");
                     RTS_V2.Audio.play(RTS_V2.AUDIO.BUYSUCCESS);
                 }
                 else {
@@ -294,7 +363,11 @@ var RTS_V2;
             this.playermanager = _playermanager;
             this.kontextMenuElement = document.querySelector("#buymenu");
             this.buyTankElement = document.querySelector("#buy-tank-btn");
+            this.buySuperTankElement = document.querySelector("#buy-supertank-btn");
+            this.buyBomberElement = document.querySelector("#buy-bomber-btn");
+            this.buySuperTankElement.addEventListener("click", this.buySuperTank);
             this.buyTankElement.addEventListener("click", this.buyTank);
+            this.buyBomberElement.addEventListener("click", this.buyBomber);
             // let camera: ƒ.ComponentCamera = viewport.camera;
             // let basePos: ƒ.Vector3 = this.playermanager.base.mtxLocal.translation.copy;
             // let projection: ƒ.Vector3 = camera.project(basePos);
@@ -320,12 +393,14 @@ var RTS_V2;
 var RTS_V2;
 (function (RTS_V2) {
     class Flock {
-        constructor(_unit) {
+        constructor(_unit, _avoidanceRadius = 1.3, _avoidanceRadiusBase = 1.7) {
             this.neighborRadius = 5;
             this.avoidanceRadius = 1.3;
             this.avoidanceRadiusBase = 1.7;
             this.moveweight = 0.4;
             this.avoidanceWeight = 0.6;
+            this.avoidanceRadius = _avoidanceRadius;
+            this.avoidanceRadiusBase = _avoidanceRadiusBase;
             this.unit = _unit;
             this.squareNeighborRadius = this.neighborRadius ** 2;
             this.squareAvoidanceRadius = this.avoidanceRadius ** 2;
@@ -373,7 +448,7 @@ var RTS_V2;
         }
         getNearbyObjects(_node = this.unit) {
             let nearbyObjects = new Array();
-            let objects = RTS_V2.Utils.getAllGameObjects();
+            let objects = RTS_V2.Utils.getAllButAirPlains();
             for (let value of objects) {
                 let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
                 let distanceSquared = distanceVector.magnitudeSquared;
@@ -470,7 +545,6 @@ var RTS_V2;
     var ƒAid = FudgeAid;
     let terrainTiling = 5; //size of each tile
     let cameraDistance;
-    //let mousePos= ƒ.Vector2;
     ƒ.RenderManager.initialize(true, false);
     window.addEventListener("load", hndLoad);
     function hndLoad(_event) {
@@ -479,9 +553,7 @@ var RTS_V2;
         let backgroundImg = document.querySelector("#terrain");
         //prevents the context menu to open
         canvas.addEventListener("contextmenu", event => event.preventDefault());
-        RTS_V2.Bullet.loadImages();
-        RTS_V2.TankUnit.loadImages();
-        RTS_V2.Base.loadImage();
+        loadGameImages();
         let graph = new ƒ.Node("Game");
         let terrain = createTerrainNode(backgroundImg);
         graph.appendChild(terrain);
@@ -544,7 +616,36 @@ var RTS_V2;
         RTS_V2.terrainY = settings.terrain.terrainY;
         RTS_V2.unitsPerPlayer = settings.general.unitsPerPlayer;
         cameraDistance = settings.general.cameraDistance;
+        RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.TANK, settings.unitValues.tank);
+        RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.SUPERTANK, settings.unitValues.supertank);
+        RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.BOMBER, settings.unitValues.bomber);
     }
+    function loadGameImages() {
+        RTS_V2.Bullet.loadImages();
+        RTS_V2.Unit.loadImages();
+        RTS_V2.TankUnit.loadImages();
+        RTS_V2.Base.loadImage();
+        RTS_V2.SuperTank.loadImages();
+        RTS_V2.Bomber.loadImages();
+    }
+})(RTS_V2 || (RTS_V2 = {}));
+var RTS_V2;
+(function (RTS_V2) {
+    class PlainFlock extends RTS_V2.Flock {
+        getNearbyObjects(_node = this.unit) {
+            let nearbyObjects = new Array();
+            let objects = RTS_V2.Utils.getAirPlanes();
+            for (let value of objects) {
+                let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
+                let distanceSquared = distanceVector.magnitudeSquared;
+                if (value != _node && distanceSquared < this.squareNeighborRadius) {
+                    nearbyObjects.push(value);
+                }
+            }
+            return nearbyObjects;
+        }
+    }
+    RTS_V2.PlainFlock = PlainFlock;
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
 (function (RTS_V2) {
@@ -561,6 +662,13 @@ var RTS_V2;
                 localStorage.setItem("gameTime", RTS_V2.Utils.gameTimeToString());
                 localStorage.setItem("destroyedUnits", RTS_V2.playerManager.unitsDestroyed.toString());
                 localStorage.setItem("gameStatus", "won");
+                window.location.replace("/endScreen.html");
+            };
+            this.gameLostHandler = (_event) => {
+                console.log("End Game");
+                localStorage.setItem("gameTime", RTS_V2.Utils.gameTimeToString());
+                localStorage.setItem("destroyedUnits", RTS_V2.playerManager.unitsDestroyed.toString());
+                localStorage.setItem("gameStatus", "lost");
                 window.location.replace("/endScreen.html");
             };
             this.pointerUp = (_event) => {
@@ -623,6 +731,7 @@ var RTS_V2;
             maxUnits.innerHTML = RTS_V2.unitsPerPlayer + "";
             console.log(this.buyMenu);
             this.addEventListener("gameWon", this.gameWonHandler);
+            this.addEventListener("gameLost", this.gameLostHandler);
         }
         startCoinTimer() {
             this.timerHTMLElement = document.querySelector("#coins");
@@ -633,7 +742,21 @@ var RTS_V2;
             this.increaseUnitCount();
             let spawnPos = this.base.mtxLocal.translation.copy;
             spawnPos.add(ƒ.Vector3.Y(-3));
-            let newUnit = new RTS_V2.TankUnit("TankUnit", spawnPos);
+            let newUnit = new RTS_V2.TankUnit("Unit", spawnPos);
+            RTS_V2.gameobjects.appendChild(newUnit);
+        }
+        spawnSuperTank() {
+            this.increaseUnitCount();
+            let spawnPos = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit = new RTS_V2.SuperTank("Unit", spawnPos);
+            RTS_V2.gameobjects.appendChild(newUnit);
+        }
+        spawnBomber() {
+            this.increaseUnitCount();
+            let spawnPos = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit = new RTS_V2.Bomber("Unit", spawnPos);
             RTS_V2.gameobjects.appendChild(newUnit);
         }
         increaseUnitsDestroyed() {
@@ -661,15 +784,24 @@ var RTS_V2;
 /// <reference path="GameObject.ts"/>
 (function (RTS_V2) {
     var ƒ = FudgeCore;
+    let UnitType;
+    (function (UnitType) {
+        UnitType[UnitType["TANK"] = 0] = "TANK";
+        UnitType[UnitType["SUPERTANK"] = 1] = "SUPERTANK";
+        UnitType[UnitType["BOMBER"] = 2] = "BOMBER";
+    })(UnitType = RTS_V2.UnitType || (RTS_V2.UnitType = {}));
     class Unit extends RTS_V2.GameObject {
         constructor() {
             super(...arguments);
             this.speed = 3 / 1000;
             this.shoot = (_node, _target) => {
                 let startingPos = _node.mtxWorld.copy;
-                let bullet = new RTS_V2.Bullet(startingPos.translation.copy, _target);
+                let bullet = new RTS_V2.Bullet(startingPos.translation.copy, _target, this.isPlayer, this.unitType);
                 RTS_V2.bullets.appendChild(bullet);
             };
+        }
+        static loadImages() {
+            Unit.selectedImg = document.querySelector("#selected");
         }
         set setMove(_pos) {
             this.moveTo = _pos;
@@ -682,6 +814,46 @@ var RTS_V2;
         }
         get getHealth() {
             return this.health;
+        }
+        calculateDamage(_bullet) {
+            this.health -= (_bullet.damage / this.armor);
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+                this.target = null;
+                this.clearTimer();
+                if (this.isPlayer) {
+                    RTS_V2.playerManager.decreaseUnitCount();
+                }
+                else {
+                    RTS_V2.playerManager.increaseUnitsDestroyed();
+                }
+            }
+        }
+        update() {
+            let getNeighbors = this.flock.getNearbyObjects(this);
+            let avoidObjects = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
+            if (this.target != null) {
+                this.attack();
+            }
+            else {
+                this.clearTimer();
+            }
+            if (this.moveTo != null && this.moveTo != undefined) {
+                this.move(this.moveTo);
+                //don't ask why! it somehow prevents an error and works
+                if (this.moveTo != null) {
+                    let pointAt = this.moveTo.copy;
+                    RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                }
+            }
+            else if (avoidObjects.length > 0) {
+                let moveVector = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
+                this.move(moveVector);
+            }
         }
         attack() {
             let targetPos = this.target.mtxWorld.translation.copy;
@@ -734,7 +906,112 @@ var RTS_V2;
             }
         }
     }
+    Unit.unitSettings = new Map();
     RTS_V2.Unit = Unit;
+})(RTS_V2 || (RTS_V2 = {}));
+/// <reference path="Unit.ts"/>
+var RTS_V2;
+/// <reference path="Unit.ts"/>
+(function (RTS_V2) {
+    var ƒ = FudgeCore;
+    var ƒAid = FudgeAid;
+    class SuperTank extends RTS_V2.Unit {
+        constructor(_name, _pos, _isPlayer = true) {
+            super(_name);
+            this.unitType = RTS_V2.UnitType.SUPERTANK;
+            let unitSettings = RTS_V2.Unit.unitSettings.get(this.unitType);
+            this.isPlayer = _isPlayer;
+            this.collisionRange = 1;
+            this.shootingRange = 6;
+            this.health = unitSettings.health;
+            this.armor = unitSettings.armor;
+            this.shootingRate = unitSettings.shootingrate;
+            this.speed = unitSettings.speed;
+            this.flock = new RTS_V2.Flock(this, 2);
+            this.createNodes(_pos);
+            ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
+            this.healthBar = new RTS_V2.Healthbar(this);
+        }
+        static loadImages() {
+            SuperTank.bodyImg = document.querySelector("#supertankbody");
+            SuperTank.playerbarrelImg = document.querySelector("#playerSuperTankBarrel");
+            SuperTank.enemyBarrelImg = document.querySelector("#enemySuperTankBarrel");
+        }
+        calculateDamage(_bullet) {
+            let damage;
+            if (_bullet.unitType == RTS_V2.UnitType.BOMBER) {
+                damage = ((_bullet.damage * 1.5) / this.armor);
+            }
+            else if (_bullet.unitType == RTS_V2.UnitType.TANK) {
+                damage = ((_bullet.damage * 0.5) / this.armor);
+            }
+            else {
+                damage = ((_bullet.damage) / this.armor);
+            }
+            this.health -= damage;
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+                this.target = null;
+                this.clearTimer();
+                if (this.isPlayer) {
+                    RTS_V2.playerManager.decreaseUnitCount();
+                }
+                else {
+                    RTS_V2.playerManager.increaseUnitsDestroyed();
+                }
+            }
+        }
+        setPicked(_bool) {
+            if (_bool) {
+                this.appendChild(this.selected);
+            }
+            else {
+                this.removeChild(this.selected);
+            }
+        }
+        follow() {
+            if (this.target != null && this.target != undefined) {
+                let targetpos = this.target.mtxWorld.translation.copy;
+                RTS_V2.Utils.adjustLookAtToGameworld(targetpos, this.cannonNode);
+            }
+        }
+        createNodes(_pos) {
+            let mesh = new ƒ.MeshSprite();
+            let bodyMtr = this.getTextureMaterial(SuperTank.bodyImg);
+            let selectedMtr = this.getTextureMaterial(RTS_V2.Unit.selectedImg);
+            let cannonMtr;
+            if (this.isPlayer) {
+                cannonMtr = this.getTextureMaterial(SuperTank.playerbarrelImg);
+            }
+            else {
+                cannonMtr = this.getTextureMaterial(SuperTank.enemyBarrelImg);
+            }
+            this.selected = new ƒAid.Node("Unit Selected", ƒ.Matrix4x4.IDENTITY(), selectedMtr, RTS_V2.TankUnit.mesh);
+            let selectedCmpNode = this.selected.getComponent(ƒ.ComponentMesh);
+            selectedCmpNode.pivot.scale(ƒ.Vector3.ONE(2));
+            let unitCmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(_pos));
+            this.addComponent(unitCmpTransform);
+            this.bodyNode = new ƒAid.Node("Unit Body", ƒ.Matrix4x4.IDENTITY(), bodyMtr, mesh);
+            let bodyCmpMesh = this.bodyNode.getComponent(ƒ.ComponentMesh);
+            bodyCmpMesh.pivot.scale(ƒ.Vector3.ONE(1.5));
+            bodyCmpMesh.pivot.rotateZ(270);
+            this.cannonNode = new ƒ.Node("Unit Cannon");
+            let cmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(ƒ.Vector3.Z(0.12)));
+            this.cannonNode.addComponent(cmpTransform);
+            let barrelNode = new ƒAid.Node("Unit Barrel", ƒ.Matrix4x4.TRANSLATION(new ƒ.Vector3(-0.5, 0, 0.11)), cannonMtr, RTS_V2.TankUnit.mesh);
+            let barrelCmpMesh = barrelNode.getComponent(ƒ.ComponentMesh);
+            barrelCmpMesh.pivot.scale(new ƒ.Vector3(1, 0.5, 0));
+            barrelCmpMesh.pivot.rotateZ(90);
+            this.appendChild(this.bodyNode);
+            this.appendChild(this.cannonNode);
+            this.cannonNode.appendChild(barrelNode);
+        }
+    }
+    RTS_V2.SuperTank = SuperTank;
 })(RTS_V2 || (RTS_V2 = {}));
 /// <reference path="Unit.ts"/>
 var RTS_V2;
@@ -745,13 +1022,15 @@ var RTS_V2;
     class TankUnit extends RTS_V2.Unit {
         constructor(_name, _pos, _isPlayer = true) {
             super(_name);
+            this.unitType = RTS_V2.UnitType.TANK;
+            let unitsetting = RTS_V2.Unit.unitSettings.get(this.unitType);
             this.isPlayer = _isPlayer;
             this.collisionRange = 0.6;
             this.shootingRange = 5;
-            this.health = 1;
-            this.armor = 3;
-            this.shootingRate = 1000;
-            this.speed = 3 / 1000;
+            this.health = unitsetting.health;
+            this.armor = unitsetting.armor;
+            this.shootingRate = unitsetting.shootingrate;
+            this.speed = unitsetting.speed;
             this.flock = new RTS_V2.Flock(this);
             this.createNodes(_pos);
             ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
@@ -763,7 +1042,34 @@ var RTS_V2;
             TankUnit.enemyBodyImg = document.querySelector("#enemytank");
             TankUnit.enemyBarrelImg = document.querySelector("#enemybarrel");
             TankUnit.barrelImg = document.querySelector("#barrel");
-            TankUnit.selectedImg = document.querySelector("#selected");
+        }
+        calculateDamage(_bullet) {
+            let damage;
+            if (_bullet.unitType == RTS_V2.UnitType.SUPERTANK) {
+                damage = ((_bullet.damage * 1.5) / this.armor);
+            }
+            else if (_bullet.unitType == RTS_V2.UnitType.BOMBER) {
+                damage = ((_bullet.damage * 0.5) / this.armor);
+            }
+            else {
+                damage = ((_bullet.damage) / this.armor);
+            }
+            this.health -= damage;
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+                this.target = null;
+                this.clearTimer();
+                if (this.isPlayer) {
+                    RTS_V2.playerManager.decreaseUnitCount();
+                }
+                else {
+                    RTS_V2.playerManager.increaseUnitsDestroyed();
+                }
+            }
         }
         setPicked(_bool) {
             if (_bool) {
@@ -771,29 +1077,6 @@ var RTS_V2;
             }
             else {
                 this.removeChild(this.selected);
-            }
-        }
-        update() {
-            let getNeighbors = this.flock.getNearbyObjects(this);
-            console.log(getNeighbors.length);
-            let avoidObjects = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
-            if (this.target != null) {
-                this.attack();
-            }
-            else {
-                this.clearTimer();
-            }
-            if (this.moveTo != null && this.moveTo != undefined) {
-                this.move(this.moveTo);
-                //don't ask why! it somehow prevents an error and works
-                if (this.moveTo != null) {
-                    let pointAt = this.moveTo.copy;
-                    RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
-                }
-            }
-            else if (avoidObjects.length > 0) {
-                let moveVector = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
-                this.move(moveVector);
             }
         }
         follow() {
@@ -804,7 +1087,7 @@ var RTS_V2;
         }
         createNodes(_pos) {
             let cannonMtr = this.getTextureMaterial(TankUnit.cannonImg);
-            let selectedMtr = this.getTextureMaterial(TankUnit.selectedImg);
+            let selectedMtr = this.getTextureMaterial(RTS_V2.Unit.selectedImg);
             let bodyMtr;
             let barrelMtr;
             if (this.isPlayer) {
@@ -961,7 +1244,7 @@ var RTS_V2;
         }
         Utils.getGameObjects = getGameObjects;
         function getUnits(_isPlayer = true) {
-            let array = RTS_V2.gameobjects.getChildren().map(value => value);
+            let array = RTS_V2.gameobjects.getChildrenByName("Unit").map(value => value);
             if (_isPlayer) {
                 return array.filter((value) => {
                     if (value.isPlayer)
@@ -982,6 +1265,28 @@ var RTS_V2;
             return RTS_V2.gameobjects.getChildren().map(value => value);
         }
         Utils.getAllGameObjects = getAllGameObjects;
+        function getAirPlanes() {
+            let array = RTS_V2.gameobjects.getChildren().map(value => value);
+            let plainArray = Array();
+            for (let unit of array) {
+                if (unit.unitType == RTS_V2.UnitType.BOMBER) {
+                    plainArray.push(unit);
+                }
+            }
+            return plainArray;
+        }
+        Utils.getAirPlanes = getAirPlanes;
+        function getAllButAirPlains() {
+            let array = RTS_V2.gameobjects.getChildren().map(value => value);
+            let gameObjectArray = Array();
+            for (let unit of array) {
+                if (unit.unitType != 2) {
+                    gameObjectArray.push(unit);
+                }
+            }
+            return gameObjectArray;
+        }
+        Utils.getAllButAirPlains = getAllButAirPlains;
         function drawSelectionRectangle(_startClient, _endClient) {
             let ctx = RTS_V2.viewport.getContext();
             let vector = _endClient.copy;
@@ -996,22 +1301,133 @@ var RTS_V2;
         Utils.drawSelectionRectangle = drawSelectionRectangle;
     })(Utils = RTS_V2.Utils || (RTS_V2.Utils = {}));
 })(RTS_V2 || (RTS_V2 = {}));
+/// <reference path="Unit.ts"/>
 var RTS_V2;
+/// <reference path="Unit.ts"/>
 (function (RTS_V2) {
-    window.addEventListener("load", () => {
-        new EndScreenManager();
-    });
-    class EndScreenManager {
-        constructor() {
-            console.log("Test Test Test");
-            this.titleHTMLElement = document.querySelector("#endscreen-title");
-            this.endTimeHTMLElement = document.querySelector("#end-time");
-            this.endDestoyedEnemies = document.querySelector("#end-enemies-destroyed");
-            this.titleHTMLElement.innerHTML = (localStorage.getItem("gameStatus") == "won") ? "You Won" : "You Lost";
-            this.endTimeHTMLElement.innerHTML = localStorage.getItem("gameTime");
-            this.endDestoyedEnemies.innerHTML = localStorage.getItem("destroyedUnits");
+    var ƒ = FudgeCore;
+    var ƒAid = FudgeAid;
+    class Bomber extends RTS_V2.Unit {
+        constructor(_name, _pos, _isPlayer = true) {
+            super(_name);
+            this.unitType = RTS_V2.UnitType.BOMBER;
+            let unitSettings = RTS_V2.Unit.unitSettings.get(this.unitType);
+            this.isPlayer = _isPlayer;
+            this.collisionRange = 0.8;
+            this.shootingRange = 4;
+            this.health = unitSettings.health;
+            this.armor = unitSettings.armor;
+            this.shootingRate = unitSettings.shootingrate;
+            this.speed = unitSettings.speed;
+            this.flock = new RTS_V2.PlainFlock(this);
+            this.createNodes(_pos);
+            ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
+            this.healthBar = new RTS_V2.Healthbar(this);
+        }
+        static loadImages() {
+            Bomber.bodyImg = document.querySelector("#airplane");
+            Bomber.playerbarrelImg = document.querySelector("#playerairplaneBarrel");
+            Bomber.enemyBarrelImg = document.querySelector("#enemyairplaneBarrel");
+        }
+        calculateDamage(_bullet) {
+            let damage;
+            if (_bullet.unitType == RTS_V2.UnitType.TANK) {
+                damage = ((_bullet.damage * 1.5) / this.armor);
+            }
+            else if (_bullet.unitType == RTS_V2.UnitType.SUPERTANK) {
+                damage = ((_bullet.damage * 0.5) / this.armor);
+            }
+            else {
+                damage = ((_bullet.damage) / this.armor);
+            }
+            this.health -= damage;
+            //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
+            if (this.health <= 0 && !this.isDead) {
+                RTS_V2.gameobjects.removeChild(this);
+                this.isDead = true;
+                this.healthBar.delete();
+                this.healthBar = null;
+                this.target = null;
+                this.clearTimer();
+                if (this.isPlayer) {
+                    RTS_V2.playerManager.decreaseUnitCount();
+                }
+                else {
+                    RTS_V2.playerManager.increaseUnitsDestroyed();
+                }
+            }
+        }
+        setPicked(_bool) {
+            if (_bool) {
+                this.appendChild(this.selected);
+            }
+            else {
+                this.removeChild(this.selected);
+            }
+        }
+        update() {
+            let getNeighbors = this.flock.getNearbyObjects(this);
+            let avoidObjects = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
+            if (this.target != null) {
+                this.attack();
+            }
+            else {
+                this.clearTimer();
+            }
+            if (this.moveTo != null && this.moveTo != undefined) {
+                this.move(this.moveTo);
+                //don't ask why! it somehow prevents an error and works
+                if (this.moveTo != null) {
+                    let pointAt = this.moveTo.copy;
+                    pointAt.add(ƒ.Vector3.Z(0.6));
+                    RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
+                }
+            }
+            else if (avoidObjects.length > 0) {
+                let moveVector = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
+                this.move(moveVector);
+            }
+        }
+        follow() {
+            if (this.target != null && this.target != undefined) {
+                let targetpos = this.target.mtxWorld.translation.copy;
+                targetpos.add(ƒ.Vector3.Z(0.3));
+                RTS_V2.Utils.adjustLookAtToGameworld(targetpos, this.cannonNode);
+            }
+        }
+        createNodes(_pos) {
+            let mesh = new ƒ.MeshSprite();
+            let bodyMtr = this.getTextureMaterial(Bomber.bodyImg);
+            let selectedMtr = this.getTextureMaterial(RTS_V2.Unit.selectedImg);
+            let cannonMtr;
+            if (this.isPlayer) {
+                cannonMtr = this.getTextureMaterial(Bomber.playerbarrelImg);
+            }
+            else {
+                cannonMtr = this.getTextureMaterial(Bomber.enemyBarrelImg);
+            }
+            this.selected = new ƒAid.Node("Unit Selected", ƒ.Matrix4x4.IDENTITY(), selectedMtr, RTS_V2.TankUnit.mesh);
+            let selectedCmpNode = this.selected.getComponent(ƒ.ComponentMesh);
+            selectedCmpNode.pivot.scale(ƒ.Vector3.ONE(1.2));
+            let position = _pos.copy;
+            let unitCmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(position));
+            this.addComponent(unitCmpTransform);
+            this.bodyNode = new ƒAid.Node("Unit Body", ƒ.Matrix4x4.TRANSLATION(ƒ.Vector3.Z(0.3)), bodyMtr, mesh);
+            let bodyCmpMesh = this.bodyNode.getComponent(ƒ.ComponentMesh);
+            bodyCmpMesh.pivot.scale(ƒ.Vector3.ONE(2));
+            bodyCmpMesh.pivot.rotateZ(180);
+            this.cannonNode = new ƒ.Node("Unit Cannon");
+            let cmpTransform = new ƒ.ComponentTransform(ƒ.Matrix4x4.TRANSLATION(ƒ.Vector3.Z(0.3)));
+            this.cannonNode.addComponent(cmpTransform);
+            let barrelNode = new ƒAid.Node("Unit Barrel", ƒ.Matrix4x4.TRANSLATION(new ƒ.Vector3(-0.2, 0, 0.11)), cannonMtr, RTS_V2.TankUnit.mesh);
+            let barrelCmpMesh = barrelNode.getComponent(ƒ.ComponentMesh);
+            barrelCmpMesh.pivot.scale(new ƒ.Vector3(0.6, 0.3, 0));
+            barrelCmpMesh.pivot.rotateZ(90);
+            this.appendChild(this.bodyNode);
+            this.appendChild(this.cannonNode);
+            this.cannonNode.appendChild(barrelNode);
         }
     }
-    RTS_V2.EndScreenManager = EndScreenManager;
+    RTS_V2.Bomber = Bomber;
 })(RTS_V2 || (RTS_V2 = {}));
 //# sourceMappingURL=RealTimeStrategie.js.map

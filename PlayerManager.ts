@@ -30,11 +30,12 @@ namespace RTS_V2 {
             this.buyMenu = new BuyKontextMenu(this);
             this.unitsDestroyedHTMLElement = document.querySelector("#units-destoyed");
             this.unitCountHTMLElement = document.querySelector("#unit-count");
-            let maxUnits = document.querySelector("#max-units");
+            let maxUnits: HTMLElement = document.querySelector("#max-units");
             maxUnits.innerHTML = unitsPerPlayer + "";
             console.log(this.buyMenu);
 
             this.addEventListener("gameWon", this.gameWonHandler);
+            this.addEventListener("gameLost", this.gameLostHandler);
         }
 
         public gameWonHandler = (_event: Event): void => {
@@ -42,6 +43,14 @@ namespace RTS_V2 {
             localStorage.setItem("gameTime", Utils.gameTimeToString());
             localStorage.setItem("destroyedUnits", playerManager.unitsDestroyed.toString());
             localStorage.setItem("gameStatus", "won");
+            window.location.replace("/endScreen.html");
+        }
+
+        public gameLostHandler = (_event: Event): void => {
+            console.log("End Game");
+            localStorage.setItem("gameTime", Utils.gameTimeToString());
+            localStorage.setItem("destroyedUnits", playerManager.unitsDestroyed.toString());
+            localStorage.setItem("gameStatus", "lost");
             window.location.replace("/endScreen.html");
         }
 
@@ -86,7 +95,23 @@ namespace RTS_V2 {
             this.increaseUnitCount();
             let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
             spawnPos.add(ƒ.Vector3.Y(-3));
-            let newUnit: TankUnit = new TankUnit("TankUnit", spawnPos);
+            let newUnit: TankUnit = new TankUnit("Unit", spawnPos);
+            gameobjects.appendChild(newUnit);
+        }
+
+        public spawnSuperTank(): void {
+            this.increaseUnitCount();
+            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit: SuperTank = new SuperTank("Unit", spawnPos);
+            gameobjects.appendChild(newUnit);
+        }
+
+        public spawnBomber(): void {
+            this.increaseUnitCount();
+            let spawnPos: ƒ.Vector3 = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit: Bomber = new Bomber("Unit", spawnPos);
             gameobjects.appendChild(newUnit);
         }
 
