@@ -46,6 +46,7 @@ progress::-webkit-progress-bar {
 .head{
     position: absolute;
     left: 10px;
+    color: white;
 }
 
 #buymenu{

@@ -86,7 +86,6 @@ namespace RTS_V2 {
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
                 let playerUnitsNearBase: Unit[] = this.getPlayerUnitsNearBase(Utils.getUnits(true));
-                // let playerUnits: Unit[]= 
 
                 if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length == 0) {
                     for (let unit of activeAndNonActiveUnits.nonactiveunits) {

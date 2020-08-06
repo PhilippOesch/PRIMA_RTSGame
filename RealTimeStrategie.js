@@ -68,7 +68,6 @@ var RTS_V2;
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
                 let playerUnitsNearBase = this.getPlayerUnitsNearBase(RTS_V2.Utils.getUnits(true));
-                // let playerUnits: Unit[]= 
                 if (activeAndNonActiveUnits.nonactiveunits.length > 0 && playerUnitsNearBase.length == 0) {
                     for (let unit of activeAndNonActiveUnits.nonactiveunits) {
                         unit.setTarget = RTS_V2.playerManager.base;
@@ -851,7 +850,7 @@ var RTS_V2;
         cmpCamera.pivot.translate(ƒ.Vector3.Z(cameraDistance));
         let cameraLookAt = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
-        cmpCamera.backgroundColor = ƒ.Color.CSS("#cccccc");
+        cmpCamera.backgroundColor = ƒ.Color.CSS("#395709");
         RTS_V2.viewport = new ƒ.Viewport();
         RTS_V2.viewport.initialize("Viewport", graph, cmpCamera, canvas);
         //setup AudioNode
@@ -947,6 +946,15 @@ var RTS_V2;
                 switch (_event.code) {
                     case ƒ.KEYBOARD_CODE.A:
                         this.selectedUnits = RTS_V2.Utils.selectAllPlayerUnits();
+                        break;
+                    case ƒ.KEYBOARD_CODE.Q:
+                        this.buyMenu.buyTank();
+                        break;
+                    case ƒ.KEYBOARD_CODE.W:
+                        this.buyMenu.buyBomber();
+                        break;
+                    case ƒ.KEYBOARD_CODE.E:
+                        this.buyMenu.buySuperTank();
                         break;
                 }
             };

@@ -58,6 +58,15 @@ namespace RTS_V2 {
                 case ƒ.KEYBOARD_CODE.A:
                     this.selectedUnits = Utils.selectAllPlayerUnits();
                     break;
+                case ƒ.KEYBOARD_CODE.Q:
+                    this.buyMenu.buyTank();
+                    break;
+                case ƒ.KEYBOARD_CODE.W:
+                    this.buyMenu.buyBomber();
+                    break;
+                case ƒ.KEYBOARD_CODE.E:
+                    this.buyMenu.buySuperTank();
+                    break;
             }
         }
 
