@@ -10,7 +10,7 @@ namespace RTS_V2 {
             this.isPlayer = _isPlayer;
             this.collisionRange = 2;
             this.health = 1;
-            this.armor = 1;
+            this.armor = 20;
             this.healthBar = new Healthbar(this, 15, 60);
             this.createNode(_pos);
         }
@@ -44,8 +44,8 @@ namespace RTS_V2 {
                 this.healthBar.delete();
                 this.healthBar = null;
 
-                let eventEngGame: CustomEvent = new CustomEvent("endGame", {bubbles: true});
-                aiManager.dispatchEvent(eventEngGame);
+                let eventEndGame: CustomEvent = new CustomEvent("gameWon", {bubbles: true});
+                playerManager.dispatchEvent(eventEndGame);
             }
         }
     }

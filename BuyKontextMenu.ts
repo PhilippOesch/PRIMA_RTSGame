@@ -35,7 +35,7 @@ namespace RTS_V2 {
         }
 
         public buyTank = (): void => {
-            if (this.playermanager.coins >= 10 && this.playermanager.unitcount < 15) {
+            if (this.playermanager.coins >= 10 && this.playermanager.unitcount < unitsPerPlayer) {
                 this.playermanager.coins -= 10;
                 this.playermanager.spawnTank();
                 console.log("Tank gekauft");

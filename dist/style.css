@@ -79,6 +79,6 @@ progress::-webkit-progress-bar {
     margin-top: 0;
 }
 
-.unit-count-container{
-    padding-top: 1rem;
+.head div{
+    max-width: 250px;
 }

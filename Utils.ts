@@ -40,6 +40,12 @@ namespace RTS_V2 {
             return targetPosArray;
         }
 
+        export function gameTimeToString(): string {
+            let time: number = ƒ.Time.game.get();
+            let units: ƒ.TimeUnits = ƒ.Time.getUnits(time);
+            return units.minutes.toString().padStart(2, "0") + ":" + units.seconds.toString().padStart(2, "0");
+        }
+
         export function commandUnits(_selectedunits: Unit[], _pos: ƒ.Vector3, _ray: ƒ.Ray): void {
 
             let targetPosArray: ƒ.Vector3[] = Utils.createUnitPositions(_pos, [2, 4, 6], [5, 10, 20]);

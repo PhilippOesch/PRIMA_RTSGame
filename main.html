@@ -25,13 +25,17 @@
     <img id="enemybarrel" src="assets/textures/barrelRed_outline.png" crossorigin="anonymous">
     <img id="base" src="assets/textures/scifiStructure_04.png" crossorigin="anonymous">
     <div class="head">
+        <div class="game-time-container">
+            <h2>Game Time:</h2>
+            <h1 id="timer">0:00</h1>
+        </div>
         <div class="coin-count-container">
             <h2>Coins:</h2>
             <h1 id="coins">0</h1>
         </div>
         <div class="unit-count-container">
             <h2>Units:</h2>
-            <h1><span id="unit-count">0</span> /15</h1>
+            <h1><span id="unit-count">0</span> / <span id="max-units">15</span></h1>
         </div>
         <div class="units-destoyed-count-container">
             <h2>Enemy Units Destroyed:</h2>

@@ -1,7 +1,7 @@
 namespace RTS_V2 {
     import ƒ = FudgeCore;
 
-    export class PlayerManager extends ƒ.Node{
+    export class PlayerManager extends ƒ.Node {
         public base: Base;
         public selectedUnits: Unit[];
         public startSelectionInfo: { startSelectionPos: ƒ.Vector3, startSelectionClientPos: ƒ.Vector2 };
@@ -30,7 +30,19 @@ namespace RTS_V2 {
             this.buyMenu = new BuyKontextMenu(this);
             this.unitsDestroyedHTMLElement = document.querySelector("#units-destoyed");
             this.unitCountHTMLElement = document.querySelector("#unit-count");
+            let maxUnits = document.querySelector("#max-units");
+            maxUnits.innerHTML = unitsPerPlayer + "";
             console.log(this.buyMenu);
+
+            this.addEventListener("gameWon", this.gameWonHandler);
+        }
+
+        public gameWonHandler = (_event: Event): void => {
+            console.log("End Game");
+            localStorage.setItem("gameTime", Utils.gameTimeToString());
+            localStorage.setItem("destroyedUnits", playerManager.unitsDestroyed.toString());
+            localStorage.setItem("gameStatus", "won");
+            window.location.replace("/endScreen.html");
         }
 
         public pointerUp = (_event: ƒ.EventPointer): void => {

@@ -3,9 +3,9 @@ namespace RTS_V2 {
     import ƒ = FudgeCore;
 
     export abstract class Unit extends GameObject {
+        protected target: GameObject;
         protected shootingRange: number;
         protected shootingRate: number;
-        protected target: GameObject;
         protected shootingTimer: ƒ.Timer;
         protected moveTo: ƒ.Vector3;
         protected speed: number = 3 / 1000;
@@ -19,6 +19,10 @@ namespace RTS_V2 {
 
         public set setTarget(_target: GameObject) {
             this.target = _target;
+        }
+
+        public get getTarget(): GameObject {
+            return this.target;
         }
 
         public get getHealth(): number {

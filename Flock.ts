@@ -38,16 +38,67 @@ namespace RTS_V2 {
             return move;
         }
 
-        private avoidance(_node: Unit, _neighbors: GameObject[]): ƒ.Vector3 {
+        public getAvoidableGameObjects(_node: Unit = this.unit, _neighbors: GameObject[]): GameObject[] {
+            let gameobjectArray: GameObject[] = new Array<GameObject>();
+
+            for (let element of _neighbors) {
+                let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(element.mtxWorld.translation, _node.mtxWorld.translation);
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius) {
+                    gameobjectArray.push(element);
+                }
+            }
+
+            return gameobjectArray;
+        }
+
+        public getAdjustedAvoidanceVector(_node: Unit = this.unit, _avoidNeighbors: GameObject[]): ƒ.Vector3 {
+            if (_avoidNeighbors.length == 0) {
+                return ƒ.Vector3.ZERO();
+            }
+
+            let avoidanceMove: ƒ.Vector3 = ƒ.Vector3.ZERO();
+            let nAvoide: number = 0;
+
+            for (let element of _avoidNeighbors) {
+                let avoidVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
+                avoidanceMove.add(avoidVector);
+                nAvoide++;
+            }
+
+            if (nAvoide > 0)
+            avoidanceMove.scale(1 / nAvoide);
+
+            avoidanceMove = this.partialNormalization(avoidanceMove, this.avoidanceWeight);
+
+            return avoidanceMove;
+        }
+
+        public getNearbyObjects(_node: Unit = this.unit): Array<GameObject> {
+            let nearbyObjects: GameObject[] = new Array<GameObject>();
+            let objects: GameObject[] = Utils.getAllGameObjects();
+
+            for (let value of objects) {
+                let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
+                let distanceSquared: number = distanceVector.magnitudeSquared;
+                if (value != _node && distanceSquared < this.squareNeighborRadius) {
+                    nearbyObjects.push(value);
+                }
+            }
+
+            return nearbyObjects;
+        }
+
+        private avoidance(_node: Unit = this.unit, _neighbors: GameObject[]): ƒ.Vector3 {
             if (_neighbors.length == 0) {
                 return ƒ.Vector3.ZERO();
             }
 
             let avoidanceMove: ƒ.Vector3 = ƒ.Vector3.ZERO();
             let nAvoide: number = 0;
+
             for (let element of _neighbors) {
                 let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(element.mtxWorld.translation, _node.mtxWorld.translation);
-                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius ) {
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius) {
                     let avoidVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
                     avoidanceMove.add(avoidVector);
                     nAvoide++;
@@ -72,21 +123,6 @@ namespace RTS_V2 {
             }
 
             return _vector;
-        }
-
-        private getNearbyObjects(_node: Unit): Array<GameObject> {
-            let nearbyObjects: GameObject[] = new Array<GameObject>();
-            let objects: GameObject[] = Utils.getAllGameObjects();
-
-            for (let value of objects) {
-                let distanceVector: ƒ.Vector3 = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
-                let distanceSquared: number = distanceVector.magnitudeSquared;
-                if (value != _node && distanceSquared < this.squareNeighborRadius) {
-                    nearbyObjects.push(value);
-                }
-            }
-
-            return nearbyObjects;
         }
     }
 }

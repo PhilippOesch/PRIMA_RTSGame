@@ -1,4 +1,3 @@
-
 namespace RTS_V2 {
     import ƒ = FudgeCore;
     import ƒAid = FudgeAid;
@@ -8,13 +7,16 @@ namespace RTS_V2 {
     export let gameobjects: ƒ.Node;
     export let bullets: ƒ.Node;
 
-    export let terrainX: number = 30;
-    export let terrainY: number = 20;
+    export let terrainX: number;
+    export let terrainY: number;
 
     export let playerManager: PlayerManager;
     export let aiManager: AIManager;
+    export let gameTimer: ƒ.Timer;
+    export let unitsPerPlayer: number;
 
     let terrainTiling: number = 5; //size of each tile
+    let cameraDistance: number;
 
     //let mousePos= ƒ.Vector2;
 
@@ -23,8 +25,7 @@ namespace RTS_V2 {
     window.addEventListener("load", hndLoad);
 
     function hndLoad(_event: Event): void {
-        // ƒUi.CustomElementTemplate.register("custom-healthbar");
-        // ƒUi.CustomElement.register("custom-healthbar", FudgeUserInterface.CustomElementTemplate);
+        loadSettings();
 
         const canvas: HTMLCanvasElement = document.querySelector("canvas");
         let backgroundImg: HTMLImageElement = document.querySelector("#terrain");
@@ -46,7 +47,7 @@ namespace RTS_V2 {
         console.log(playerManager);
 
         let cmpCamera: ƒ.ComponentCamera = new ƒ.ComponentCamera();
-        cmpCamera.pivot.translate(ƒ.Vector3.Z(35));
+        cmpCamera.pivot.translate(ƒ.Vector3.Z(cameraDistance));
         let cameraLookAt: ƒ.Vector3 = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
         cmpCamera.backgroundColor = ƒ.Color.CSS("#cccccc");
@@ -60,12 +61,12 @@ namespace RTS_V2 {
         playerManager = new PlayerManager();
         aiManager = new AIManager();
 
-        createUnits();
-
         ƒ.Debug.log(viewport);
         ƒ.Debug.log(graph);
 
         viewport.draw();
+
+        startGameTimer();
 
         ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, update);
         ƒ.Loop.start(ƒ.LOOP_MODE.TIME_REAL, 60);
@@ -76,6 +77,14 @@ namespace RTS_V2 {
         if (playerManager.startSelectionInfo != null) {
             Utils.drawSelectionRectangle(playerManager.startSelectionInfo.startSelectionClientPos, playerManager.mousePos);
         }
+    }
+
+    function startGameTimer(): void {
+        let timerHTMLElement: HTMLElement;
+        timerHTMLElement = document.querySelector("#timer");
+        gameTimer = new ƒ.Timer(ƒ.Time.game, 1000, 0, function (): void {
+            timerHTMLElement.textContent = Utils.gameTimeToString();
+        });
     }
 
     function createTerrainNode(_img: HTMLImageElement): ƒAid.Node {
@@ -96,15 +105,16 @@ namespace RTS_V2 {
         return terrain;
     }
 
+    function loadSettings(): void{
+        let file: XMLHttpRequest = new XMLHttpRequest();
+        file.open("GET", "./assets/settings.json", false);
+        file.send();
+        let settings: any = JSON.parse(file.response);
 
-    function createUnits(): void {
-
-        let unit0: Unit = new TankUnit("TankUnit", new ƒ.Vector3(0, 2, 0.1), false);
-        let unit1: Unit = new TankUnit("TankUnit", new ƒ.Vector3(2, 4, 0.1), false);
-
-        gameobjects.appendChild(unit0);
-        gameobjects.appendChild(unit1);
+        terrainX = settings.terrain.terrainX;
+        terrainY = settings.terrain.terrainY;
+        unitsPerPlayer = settings.general.unitsPerPlayer;
+        cameraDistance = settings.general.cameraDistance;
     }
-
 
 }

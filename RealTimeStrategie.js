@@ -1,23 +1,82 @@
 "use strict";
 var RTS_V2;
 (function (RTS_V2) {
-    // enum AIState{
-    //     DEFENSIVE,
-    //     OFFENSIVE
-    // }
+    var ƒ = FudgeCore;
+    let AIState;
+    (function (AIState) {
+        AIState[AIState["DEFENSIVE"] = 0] = "DEFENSIVE";
+        AIState[AIState["AGGRESSIVE"] = 1] = "AGGRESSIVE";
+    })(AIState || (AIState = {}));
     class AIManager extends ƒ.Node {
         constructor() {
             super("AIManager");
-            this.endGameHandler = (_event) => {
-                console.log("End Game");
+            this.currentState = AIState.AGGRESSIVE;
+            this.coins = 0;
+            this.unitcount = 0;
+            this.coinRate = 350;
+            this.coinTimerHandler = () => {
+                this.coins++;
             };
-            this.addEventListener("endGame", this.endGameHandler);
+            this.update = () => {
+                this.act(this.currentState);
+            };
             this.createBase();
+            this.startCoinTimer();
+            ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
+        }
+        startCoinTimer() {
+            this.coinTimer = new ƒ.Timer(ƒ.Time.game, this.coinRate, 0, this.coinTimerHandler);
+            console.log(this.coinTimer);
+        }
+        spawnTank() {
+            this.unitcount++;
+            this.coins -= 10;
+            let spawnPos = this.base.mtxLocal.translation.copy;
+            spawnPos.add(ƒ.Vector3.Y(-3));
+            let newUnit = new RTS_V2.TankUnit("TankUnit", spawnPos, false);
+            RTS_V2.gameobjects.appendChild(newUnit);
+        }
+        aggressiveAction() {
+            let units = RTS_V2.Utils.getUnits(false);
+            let activeAndNonActiveUnits;
+            if (units.length != 0) {
+                activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
+                for (let unit of activeAndNonActiveUnits.nonactiveunits) {
+                    unit.setTarget = RTS_V2.playerManager.base;
+                }
+            }
+            if (this.coins >= 10 && this.unitcount < RTS_V2.unitsPerPlayer) {
+                this.spawnTank();
+                console.log("buy");
+            }
+        }
+        splitActiveAndNonActiveUnits(_units) {
+            let activeUnits = new Array();
+            let nonActiveUnits = new Array();
+            for (let unit of _units) {
+                if (unit.getTarget == null) {
+                    activeUnits.push(unit);
+                }
+                else {
+                    nonActiveUnits.push(unit);
+                }
+            }
+            return { activeunits: _units, nonactiveunits: _units };
         }
         createBase() {
             let pos = new ƒ.Vector3(+(RTS_V2.terrainX / 2) - 5, 0, 0.1);
             this.base = new RTS_V2.Base("enemyBase", pos, false);
             RTS_V2.gameobjects.appendChild(this.base);
+        }
+        act(_action) {
+            switch (_action) {
+                case AIState.AGGRESSIVE:
+                    this.aggressiveAction();
+                    break;
+                case AIState.DEFENSIVE:
+                    console.log("defensive");
+                    break;
+            }
         }
     }
     RTS_V2.AIManager = AIManager;
@@ -115,7 +174,7 @@ var RTS_V2;
             this.isPlayer = _isPlayer;
             this.collisionRange = 2;
             this.health = 1;
-            this.armor = 1;
+            this.armor = 20;
             this.healthBar = new RTS_V2.Healthbar(this, 15, 60);
             this.createNode(_pos);
         }
@@ -142,8 +201,8 @@ var RTS_V2;
                 this.isDead = true;
                 this.healthBar.delete();
                 this.healthBar = null;
-                let eventEngGame = new CustomEvent("endGame", { bubbles: true });
-                RTS_V2.aiManager.dispatchEvent(eventEngGame);
+                let eventEndGame = new CustomEvent("gameWon", { bubbles: true });
+                RTS_V2.playerManager.dispatchEvent(eventEndGame);
             }
         }
     }
@@ -222,7 +281,7 @@ var RTS_V2;
         constructor(_playermanager) {
             this.isActive = false;
             this.buyTank = () => {
-                if (this.playermanager.coins >= 10 && this.playermanager.unitcount < 15) {
+                if (this.playermanager.coins >= 10 && this.playermanager.unitcount < RTS_V2.unitsPerPlayer) {
                     this.playermanager.coins -= 10;
                     this.playermanager.spawnTank();
                     console.log("Tank gekauft");
@@ -286,7 +345,45 @@ var RTS_V2;
             move.z = 0;
             return move;
         }
-        avoidance(_node, _neighbors) {
+        getAvoidableGameObjects(_node = this.unit, _neighbors) {
+            let gameobjectArray = new Array();
+            for (let element of _neighbors) {
+                let distanceVector = ƒ.Vector3.DIFFERENCE(element.mtxWorld.translation, _node.mtxWorld.translation);
+                if (distanceVector.magnitudeSquared < this.squareAvoidanceRadius) {
+                    gameobjectArray.push(element);
+                }
+            }
+            return gameobjectArray;
+        }
+        getAdjustedAvoidanceVector(_node = this.unit, _avoidNeighbors) {
+            if (_avoidNeighbors.length == 0) {
+                return ƒ.Vector3.ZERO();
+            }
+            let avoidanceMove = ƒ.Vector3.ZERO();
+            let nAvoide = 0;
+            for (let element of _avoidNeighbors) {
+                let avoidVector = ƒ.Vector3.DIFFERENCE(_node.mtxWorld.translation, element.mtxWorld.translation);
+                avoidanceMove.add(avoidVector);
+                nAvoide++;
+            }
+            if (nAvoide > 0)
+                avoidanceMove.scale(1 / nAvoide);
+            avoidanceMove = this.partialNormalization(avoidanceMove, this.avoidanceWeight);
+            return avoidanceMove;
+        }
+        getNearbyObjects(_node = this.unit) {
+            let nearbyObjects = new Array();
+            let objects = RTS_V2.Utils.getAllGameObjects();
+            for (let value of objects) {
+                let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
+                let distanceSquared = distanceVector.magnitudeSquared;
+                if (value != _node && distanceSquared < this.squareNeighborRadius) {
+                    nearbyObjects.push(value);
+                }
+            }
+            return nearbyObjects;
+        }
+        avoidance(_node = this.unit, _neighbors) {
             if (_neighbors.length == 0) {
                 return ƒ.Vector3.ZERO();
             }
@@ -315,18 +412,6 @@ var RTS_V2;
                 _vector.scale(_weigth);
             }
             return _vector;
-        }
-        getNearbyObjects(_node) {
-            let nearbyObjects = new Array();
-            let objects = RTS_V2.Utils.getAllGameObjects();
-            for (let value of objects) {
-                let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
-                let distanceSquared = distanceVector.magnitudeSquared;
-                if (value != _node && distanceSquared < this.squareNeighborRadius) {
-                    nearbyObjects.push(value);
-                }
-            }
-            return nearbyObjects;
         }
     }
     RTS_V2.Flock = Flock;
@@ -383,15 +468,13 @@ var RTS_V2;
 (function (RTS_V2) {
     var ƒ = FudgeCore;
     var ƒAid = FudgeAid;
-    RTS_V2.terrainX = 30;
-    RTS_V2.terrainY = 20;
     let terrainTiling = 5; //size of each tile
+    let cameraDistance;
     //let mousePos= ƒ.Vector2;
     ƒ.RenderManager.initialize(true, false);
     window.addEventListener("load", hndLoad);
     function hndLoad(_event) {
-        // ƒUi.CustomElementTemplate.register("custom-healthbar");
-        // ƒUi.CustomElement.register("custom-healthbar", FudgeUserInterface.CustomElementTemplate);
+        loadSettings();
         const canvas = document.querySelector("canvas");
         let backgroundImg = document.querySelector("#terrain");
         //prevents the context menu to open
@@ -408,7 +491,7 @@ var RTS_V2;
         graph.appendChild(RTS_V2.gameobjects);
         console.log(RTS_V2.playerManager);
         let cmpCamera = new ƒ.ComponentCamera();
-        cmpCamera.pivot.translate(ƒ.Vector3.Z(35));
+        cmpCamera.pivot.translate(ƒ.Vector3.Z(cameraDistance));
         let cameraLookAt = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
         cmpCamera.backgroundColor = ƒ.Color.CSS("#cccccc");
@@ -418,10 +501,10 @@ var RTS_V2;
         RTS_V2.Audio.start();
         RTS_V2.playerManager = new RTS_V2.PlayerManager();
         RTS_V2.aiManager = new RTS_V2.AIManager();
-        createUnits();
         ƒ.Debug.log(RTS_V2.viewport);
         ƒ.Debug.log(graph);
         RTS_V2.viewport.draw();
+        startGameTimer();
         ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, update);
         ƒ.Loop.start(ƒ.LOOP_MODE.TIME_REAL, 60);
     }
@@ -430,6 +513,13 @@ var RTS_V2;
         if (RTS_V2.playerManager.startSelectionInfo != null) {
             RTS_V2.Utils.drawSelectionRectangle(RTS_V2.playerManager.startSelectionInfo.startSelectionClientPos, RTS_V2.playerManager.mousePos);
         }
+    }
+    function startGameTimer() {
+        let timerHTMLElement;
+        timerHTMLElement = document.querySelector("#timer");
+        RTS_V2.gameTimer = new ƒ.Timer(ƒ.Time.game, 1000, 0, function () {
+            timerHTMLElement.textContent = RTS_V2.Utils.gameTimeToString();
+        });
     }
     function createTerrainNode(_img) {
         let txt = new ƒ.TextureImage();
@@ -445,11 +535,15 @@ var RTS_V2;
         cmpMtr.pivot.scale(new ƒ.Vector2(RTS_V2.terrainX / terrainTiling, RTS_V2.terrainY / terrainTiling));
         return terrain;
     }
-    function createUnits() {
-        let unit0 = new RTS_V2.TankUnit("TankUnit", new ƒ.Vector3(0, 2, 0.1), false);
-        let unit1 = new RTS_V2.TankUnit("TankUnit", new ƒ.Vector3(2, 4, 0.1), false);
-        RTS_V2.gameobjects.appendChild(unit0);
-        RTS_V2.gameobjects.appendChild(unit1);
+    function loadSettings() {
+        let file = new XMLHttpRequest();
+        file.open("GET", "./assets/settings.json", false);
+        file.send();
+        let settings = JSON.parse(file.response);
+        RTS_V2.terrainX = settings.terrain.terrainX;
+        RTS_V2.terrainY = settings.terrain.terrainY;
+        RTS_V2.unitsPerPlayer = settings.general.unitsPerPlayer;
+        cameraDistance = settings.general.cameraDistance;
     }
 })(RTS_V2 || (RTS_V2 = {}));
 var RTS_V2;
@@ -462,6 +556,13 @@ var RTS_V2;
             this.unitcount = 0;
             this.unitsDestroyed = 0;
             this.coinRate = 300;
+            this.gameWonHandler = (_event) => {
+                console.log("End Game");
+                localStorage.setItem("gameTime", RTS_V2.Utils.gameTimeToString());
+                localStorage.setItem("destroyedUnits", RTS_V2.playerManager.unitsDestroyed.toString());
+                localStorage.setItem("gameStatus", "won");
+                window.location.replace("/endScreen.html");
+            };
             this.pointerUp = (_event) => {
                 _event.preventDefault();
                 let posMouse = new ƒ.Vector2(_event.canvasX, _event.canvasY);
@@ -518,7 +619,10 @@ var RTS_V2;
             this.buyMenu = new RTS_V2.BuyKontextMenu(this);
             this.unitsDestroyedHTMLElement = document.querySelector("#units-destoyed");
             this.unitCountHTMLElement = document.querySelector("#unit-count");
+            let maxUnits = document.querySelector("#max-units");
+            maxUnits.innerHTML = RTS_V2.unitsPerPlayer + "";
             console.log(this.buyMenu);
+            this.addEventListener("gameWon", this.gameWonHandler);
         }
         startCoinTimer() {
             this.timerHTMLElement = document.querySelector("#coins");
@@ -572,6 +676,9 @@ var RTS_V2;
         }
         set setTarget(_target) {
             this.target = _target;
+        }
+        get getTarget() {
+            return this.target;
         }
         get getHealth() {
             return this.health;
@@ -667,6 +774,9 @@ var RTS_V2;
             }
         }
         update() {
+            let getNeighbors = this.flock.getNearbyObjects(this);
+            console.log(getNeighbors.length);
+            let avoidObjects = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
             if (this.target != null) {
                 this.attack();
             }
@@ -680,6 +790,10 @@ var RTS_V2;
                     let pointAt = this.moveTo.copy;
                     RTS_V2.Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
                 }
+            }
+            else if (avoidObjects.length > 0) {
+                let moveVector = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
+                this.move(moveVector);
             }
         }
         follow() {
@@ -764,6 +878,12 @@ var RTS_V2;
             return targetPosArray;
         }
         Utils.createUnitRingPosArray = createUnitRingPosArray;
+        function gameTimeToString() {
+            let time = ƒ.Time.game.get();
+            let units = ƒ.Time.getUnits(time);
+            return units.minutes.toString().padStart(2, "0") + ":" + units.seconds.toString().padStart(2, "0");
+        }
+        Utils.gameTimeToString = gameTimeToString;
         function commandUnits(_selectedunits, _pos, _ray) {
             let targetPosArray = Utils.createUnitPositions(_pos, [2, 4, 6], [5, 10, 20]);
             // let targetPosArray: ƒ.Vector3[] = Utils.createUnitRingPosArray(_pos, 1.5, _selectedunits.length);
@@ -875,5 +995,23 @@ var RTS_V2;
         }
         Utils.drawSelectionRectangle = drawSelectionRectangle;
     })(Utils = RTS_V2.Utils || (RTS_V2.Utils = {}));
+})(RTS_V2 || (RTS_V2 = {}));
+var RTS_V2;
+(function (RTS_V2) {
+    window.addEventListener("load", () => {
+        new EndScreenManager();
+    });
+    class EndScreenManager {
+        constructor() {
+            console.log("Test Test Test");
+            this.titleHTMLElement = document.querySelector("#endscreen-title");
+            this.endTimeHTMLElement = document.querySelector("#end-time");
+            this.endDestoyedEnemies = document.querySelector("#end-enemies-destroyed");
+            this.titleHTMLElement.innerHTML = (localStorage.getItem("gameStatus") == "won") ? "You Won" : "You Lost";
+            this.endTimeHTMLElement.innerHTML = localStorage.getItem("gameTime");
+            this.endDestoyedEnemies.innerHTML = localStorage.getItem("destroyedUnits");
+        }
+    }
+    RTS_V2.EndScreenManager = EndScreenManager;
 })(RTS_V2 || (RTS_V2 = {}));
 //# sourceMappingURL=RealTimeStrategie.js.map

@@ -1,0 +1,10 @@
+{
+    "general":{
+        "unitsPerPlayer": 15,
+        "cameraDistance": 35
+    },
+    "terrain": {
+        "terrainX": 30,
+        "terrainY": 20
+    }
+}

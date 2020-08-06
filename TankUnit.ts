@@ -51,6 +51,10 @@ namespace RTS_V2 {
 
 
         public update(): void {
+            let getNeighbors: GameObject[] = this.flock.getNearbyObjects(this);
+            console.log(getNeighbors.length);
+            let avoidObjects: GameObject[] = this.flock.getAvoidableGameObjects(this.flock.unit, getNeighbors);
+
             if (this.target != null) {
                 this.attack();
             } else {
@@ -64,6 +68,9 @@ namespace RTS_V2 {
                     let pointAt: ƒ.Vector3 = this.moveTo.copy;
                     Utils.adjustLookAtToGameworld(pointAt, this.bodyNode);
                 }
+            } else if (avoidObjects.length > 0) {
+                let moveVector: ƒ.Vector3 = this.flock.getAdjustedAvoidanceVector(this, avoidObjects);
+                this.move(moveVector);
             }
         }
 

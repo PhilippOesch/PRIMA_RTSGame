@@ -22,6 +22,7 @@
     // "isolatedModules": true,               /* Transpile each file as a separate module (similar to 'ts.transpileModule'). */
     /* -------------------- Strict Type-Checking Options */
     // ######## check if we should compile with strict=true
+    "sourceRoot": "",
     "strict": false, /*                       Enable all strict type-checking options. */
     "noImplicitAny": true, /*                 Raise error on expressions and declarations with an implied 'any' type. */
     //"strictNullChecks": true, /*              Enable strict null checks. */
@@ -55,5 +56,5 @@
     // "emitDecoratorMetadata": true,         /* Enables experimental support for emitting type metadata for decorators. */
     "skipLibCheck": true,
     "outFile": "RealTimeStrategie.js",
-  },
+  }
 }
