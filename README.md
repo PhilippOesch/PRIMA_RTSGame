@@ -20,3 +20,27 @@ Nr | Bezeichnung | Inhalt
   9 | Subklassen | Die Einheitstyp-Klassen: TankUnit, Bomber, SuperTank erben alle von der Klasse Unit. Unit enthält die Logik für das Bewegen und Projectilabfeuern der Einheiten. Unit ist eine Abstrakte-Klasse. Die Klasse Unit erbt von der Klasse GameObject welche ebenfalls eine abstrakte Klasse ist. GameObject enthält alle Funktionalitäten für die Maus-Selektierbarkeit und das Schadennehmen von Objekten. Eine Realisierung für die GameObject-Klasse,  ist die Base-Klasse welche eine Spielerbasis/ Gegnerbasis beschreibt. GameObject, Bullet, PlayerManager als auch AIManager erben von der Fudge-Klasse Node.
 10 | Maße & Positionen | Der Mittelpunkt des Koordinatensystems befindet sich mittig der Kamera im Zentrum des Spielfelds. Das Spielfeld breitet sich auf der x-y-Ebene aus. Standardmäßig ist das Spielfeld 30 (Breite)* 20 (Höhe) groß. Alles orientiert sich an der gewöhlichen Panzer-Einheit (TankUnit), diese ist eine Einheit im Durchmesser. Eine Basis ist 2 Einheiten breit also das doppelte der Panzereinheit. Eine "SuperTank"-Einheit ist 1.5 mal so groß wie eine normale Panzereinheit. Eine Bomber-Einheit ist 2 Einheiten groß. Bei der Gruppierung halten Einheiten ca. einen Abstand von 3 Einheiten von Mittelpunkt zu Mittelpunkt.
 11 | Event-System | Für die Marktinteraktionen innerhalb des Viewports, werden die Fudge-Events "pointer-down", "pointer-move" und "pointer-down" verwendet. Für Tasten-Shortcuts gibt es einen Event-Listener für das Event "keydown". Wenn Spieler- oder Gegner-Basis zerstört werden so wird von der zerstörten Basis ein CustumEvent an das PlayerManager-Objekt gesendet. PlayerManager besitzt EventListener für den Fall "Spiel gewonnen", "Spiel verloren" die Handler der beiden Events laden den EndScreen mit dem passenden Text. <br> Wenn die Gegnerbasis weniger als die Hälfte des Ursprungslebens besitzt, so sendet sie ein Event an den AIManager. Der AIManager setzt im Handler-"changeToDefensive" den Zustand auf der KI defensiv.
+
+## Bedienungsanleitung
+
+### Partie starten
+* starten des [Spiels](https://philippoesch.github.io/PRIMA_RTSGame/game/scenes/mainMenu.html)
+* Play-Button betätigen und Schwierigkeit auswählen
+
+### Im Spiel
+#### Spiel Ziel
+Ziel ist es, die Gegnerbasis (rot) zu zerstören, bevor die eigene Basis (blau) zerstört wird.
+#### Einheiten kaufen
+* Spielerbasis, sich auf der linken Seite befindent, anklicken
+* Neben der Basis öffnet sich ein Kontextmenü
+* Im Kontext Menü die gewünschte Einheit auswählen
+* Danach spawn die Einheit unterhalb der Basis
+* Ebenfalls möglich ist das Einheitenkaufen durch die Tasten Q (Tank-Einheit), W (Supertank-Einheit), E (Bomber-Einheit)
+#### Selektieren der Spieler-Einheiten
+* Mit der linken Maustaste auf eine Einheit drücken
+* _oder_ mit der linken Maustasten gedrückt ein Rechteck um die gewünschten Einheiten ziehen und die Maustaste loslassen
+* _oder_ mit der Taste A alle Spieler-Einheiten auf einmal auswählen
+* ausgewählte Einheiten werden blau markiert
+#### Kommandieren der Ausgewählter Einheiten
+* Mit der rechten Maustaste auf einen Punkt Im Spielfeld klicken - Einheiten bewegen sich dort hin
+* Mit der rechten Maustaste auf ein Gegnerobjekt klicken - Einheiten greifen das Gegnerobjekt an
