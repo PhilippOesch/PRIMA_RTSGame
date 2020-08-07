@@ -148,7 +148,7 @@ namespace RTS_V2 {
         Base.setarmor = settings.base.armor;
     }
 
-    function loadGameImages(): void{
+    function loadGameImages(): void {
         Bullet.loadImages();
         Unit.loadImages();
         TankUnit.loadImages();
