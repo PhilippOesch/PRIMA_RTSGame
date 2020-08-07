@@ -3,11 +3,11 @@ body, html{
     height: 100%;
     margin: 0;
     font-family: Montserrat;
-    background-color: #80BE1F;
+    background-image: url("../assets/BackgroundImage.jpg");
 }
 
 .lost-game{
-    background-color: #395709 !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
     color: white;
 }
 
