@@ -170,7 +170,7 @@ namespace RTS_V2 {
             let gameObjectArray: GameObject[] = Array<GameObject>();
 
             for (let unit of array) {
-                if (unit.unitType != 2) {
+                if (unit.unitType != UnitType.BOMBER) {
                     gameObjectArray.push(unit);
                 }
             }

@@ -830,6 +830,7 @@ var RTS_V2;
         getNearbyObjects(_node = this.unit) {
             let nearbyObjects = new Array();
             let objects = RTS_V2.Utils.getAllButAirPlains();
+            console.log(objects);
             for (let value of objects) {
                 let distanceVector = ƒ.Vector3.DIFFERENCE(value.mtxWorld.translation, _node.mtxWorld.translation);
                 let distanceSquared = distanceVector.magnitudeSquared;
@@ -1566,7 +1567,7 @@ var RTS_V2;
             let array = RTS_V2.gameobjects.getChildren().map(value => value);
             let gameObjectArray = Array();
             for (let unit of array) {
-                if (unit.unitType != 2) {
+                if (unit.unitType != RTS_V2.UnitType.BOMBER) {
                     gameObjectArray.push(unit);
                 }
             }
