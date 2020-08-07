@@ -15,7 +15,7 @@ namespace RTS_V2 {
         public coins: number = 0;
         public unitcount: number = 0;
 
-        private coinRate: number = 500;
+        private coinRate: number;
         private coinTimer: ƒ.Timer;
 
         private spawnPointArray: ƒ.Vector3[];
@@ -24,6 +24,7 @@ namespace RTS_V2 {
 
         constructor() {
             super("AIManager");
+            this.setDifficulty();
             this.createBase();
             this.startCoinTimer();
 
@@ -39,6 +40,21 @@ namespace RTS_V2 {
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
 
             this.addEventListener("defensive", this.changeToDefensive);
+        }
+
+        public setDifficulty(): void {
+            let difficulty: string = localStorage.getItem("difficulty");
+            switch (difficulty) {
+                case "easy":
+                    this.coinRate = 500;
+                    break;
+                case "middle":
+                    this.coinRate = 400;
+                    break;
+                case "hard":
+                    this.coinRate = 300;
+                    break;
+            }
         }
 
         public changeToDefensive = (): void => {

@@ -133,7 +133,7 @@ namespace RTS_V2 {
 
     function loadSettings(): void {
         let file: XMLHttpRequest = new XMLHttpRequest();
-        file.open("GET", "./assets/settings.json", false);
+        file.open("GET", "../assets/settings.json", false);
         file.send();
         let settings: SettingsJSON = JSON.parse(file.response);
 

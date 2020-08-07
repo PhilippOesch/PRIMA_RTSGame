@@ -59,7 +59,7 @@ namespace RTS_V2 {
                 }
             }
 
-            if (!this.nearDeath && this.health < 0.4 && !this.isPlayer) {
+            if (!this.nearDeath && this.health < 0.5 && !this.isPlayer) {
                 this.nearDeath = true;
                 let eventDefensisive: CustomEvent = new CustomEvent("defensive", { bubbles: true });
                 aiManager.dispatchEvent(eventDefensisive);

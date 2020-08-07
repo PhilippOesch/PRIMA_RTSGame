@@ -14,7 +14,6 @@ var RTS_V2;
             this.currentState = AIState.AGGRESSIVE;
             this.coins = 0;
             this.unitcount = 0;
-            this.coinRate = 500;
             this.spawnpointIndex = 0;
             this.changeToDefensive = () => {
                 this.nearBaseRadius = 10;
@@ -26,6 +25,7 @@ var RTS_V2;
             this.update = () => {
                 this.act(this.currentState);
             };
+            this.setDifficulty();
             this.createBase();
             this.startCoinTimer();
             this.spawnPointArray = new Array();
@@ -38,6 +38,20 @@ var RTS_V2;
             this.spawnPointArray.push(spawnPoint1, spawnPoint2, spawnPoint3);
             ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
             this.addEventListener("defensive", this.changeToDefensive);
+        }
+        setDifficulty() {
+            let difficulty = localStorage.getItem("difficulty");
+            switch (difficulty) {
+                case "easy":
+                    this.coinRate = 500;
+                    break;
+                case "middle":
+                    this.coinRate = 400;
+                    break;
+                case "hard":
+                    this.coinRate = 300;
+                    break;
+            }
         }
         startCoinTimer() {
             this.coinTimer = new ƒ.Timer(ƒ.Time.game, this.coinRate, 0, this.coinTimerHandler);
@@ -215,10 +229,10 @@ var RTS_V2;
     var ƒ = FudgeCore;
     let AUDIO;
     (function (AUDIO) {
-        AUDIO["SHOOT"] = "assets/sounds/shooting-sound.ogg";
-        AUDIO["IMPACT"] = "assets/sounds/impact-sound.ogg";
-        AUDIO["BUYSUCCESS"] = "assets/sounds/hjm-coin_clicker_1.wav";
-        AUDIO["BUYERROR"] = "assets/sounds/error_006.ogg";
+        AUDIO["SHOOT"] = "../assets/sounds/shooting-sound.ogg";
+        AUDIO["IMPACT"] = "../assets/sounds/impact-sound.ogg";
+        AUDIO["BUYSUCCESS"] = "../assets/sounds/hjm-coin_clicker_1.wav";
+        AUDIO["BUYERROR"] = "../assets/sounds/error_006.ogg";
     })(AUDIO = RTS_V2.AUDIO || (RTS_V2.AUDIO = {}));
     class Audio extends ƒ.Node {
         static start() {
@@ -342,7 +356,7 @@ var RTS_V2;
                     RTS_V2.playerManager.dispatchEvent(eventEndGame);
                 }
             }
-            if (!this.nearDeath && this.health < 0.4 && !this.isPlayer) {
+            if (!this.nearDeath && this.health < 0.5 && !this.isPlayer) {
                 this.nearDeath = true;
                 let eventDefensisive = new CustomEvent("defensive", { bubbles: true });
                 RTS_V2.aiManager.dispatchEvent(eventDefensisive);
@@ -975,7 +989,7 @@ var RTS_V2;
     }
     function loadSettings() {
         let file = new XMLHttpRequest();
-        file.open("GET", "./assets/settings.json", false);
+        file.open("GET", "../assets/settings.json", false);
         file.send();
         let settings = JSON.parse(file.response);
         RTS_V2.terrainX = settings.terrain.terrainX;

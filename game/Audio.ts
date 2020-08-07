@@ -2,10 +2,10 @@ namespace RTS_V2 {
     import ƒ = FudgeCore;
 
     export enum AUDIO {
-        SHOOT = "assets/sounds/shooting-sound.ogg",
-        IMPACT = "assets/sounds/impact-sound.ogg",
-        BUYSUCCESS = "assets/sounds/hjm-coin_clicker_1.wav",
-        BUYERROR = "assets/sounds/error_006.ogg"
+        SHOOT = "../assets/sounds/shooting-sound.ogg",
+        IMPACT = "../assets/sounds/impact-sound.ogg",
+        BUYSUCCESS = "../assets/sounds/hjm-coin_clicker_1.wav",
+        BUYERROR = "../assets/sounds/error_006.ogg"
     }
 
     export class Audio extends ƒ.Node {
