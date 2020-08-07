@@ -29,6 +29,9 @@ namespace RTS_V2 {
             terrainX: number,
             terrainY: number
         };
+        base: {
+            armor: number
+        };
         unitValues: {
             tank: UnitSettings,
             supertank: UnitSettings,
@@ -142,6 +145,7 @@ namespace RTS_V2 {
         Unit.unitSettings.set(UnitType.TANK, settings.unitValues.tank);
         Unit.unitSettings.set(UnitType.SUPERTANK, settings.unitValues.supertank);
         Unit.unitSettings.set(UnitType.BOMBER, settings.unitValues.bomber);
+        Base.setarmor = settings.base.armor;
     }
 
     function loadGameImages(): void{

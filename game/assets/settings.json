@@ -7,6 +7,9 @@
         "terrainX": 30,
         "terrainY": 20
     },
+    "base" : {
+        "armor": 50
+    },
     "unitValues": {
         "tank": {
             "damage": 1,

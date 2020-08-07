@@ -4,15 +4,21 @@ namespace RTS_V2 {
 
     export class Base extends GameObject {
         public static img: HTMLImageElement;
+        public static armor: number = 0;
+
+        private nearDeath: boolean = false;
 
         constructor(_name: string, _pos: ƒ.Vector3, _isPlayer: boolean = true) {
             super(_name);
             this.isPlayer = _isPlayer;
             this.collisionRange = 2;
             this.health = 1;
-            this.armor = 40;
             this.healthBar = new Healthbar(this, 15, 60);
             this.createNode(_pos);
+        }
+
+        public static set setarmor(_armor: number){
+            Base.armor = _armor;
         }
 
         public static loadImage(): void {
@@ -36,7 +42,7 @@ namespace RTS_V2 {
         }
 
         public calculateDamage(_bullet: Bullet): void {
-            this.health -= (_bullet.damage / this.armor);
+            this.health -= (_bullet.damage / Base.armor);
             //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
             if (this.health <= 0 && !this.isDead) {
                 gameobjects.removeChild(this);
@@ -44,14 +50,19 @@ namespace RTS_V2 {
                 this.healthBar.delete();
                 this.healthBar = null;
 
-                if(!this.isPlayer){
-                    let eventEndGame: CustomEvent = new CustomEvent("gameWon", {bubbles: true});
+                if (!this.isPlayer) {
+                    let eventEndGame: CustomEvent = new CustomEvent("gameWon", { bubbles: true });
                     playerManager.dispatchEvent(eventEndGame);
                 } else {
-                    let eventEndGame: CustomEvent = new CustomEvent("gameLost", {bubbles: true});
+                    let eventEndGame: CustomEvent = new CustomEvent("gameLost", { bubbles: true });
                     playerManager.dispatchEvent(eventEndGame);
                 }
+            }
 
+            if (!this.nearDeath && this.health < 0.4 && !this.isPlayer) {
+                this.nearDeath = true;
+                let eventDefensisive: CustomEvent = new CustomEvent("defensive", { bubbles: true });
+                aiManager.dispatchEvent(eventDefensisive);
             }
         }
     }

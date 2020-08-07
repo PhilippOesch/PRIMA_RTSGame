@@ -37,6 +37,14 @@ namespace RTS_V2 {
             this.spawnPointArray.push(spawnPoint1, spawnPoint2, spawnPoint3);
 
             ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, this.update.bind(this));
+
+            this.addEventListener("defensive", this.changeToDefensive);
+        }
+
+        public changeToDefensive = (): void => {
+            this.nearBaseRadius = 10;
+            this.currentState = AIState.DEFENSIVE;
+
         }
 
         public startCoinTimer(): void {
@@ -53,30 +61,25 @@ namespace RTS_V2 {
             this.act(this.currentState);
         }
 
-        public spawnTank(): void {
+        public spawnUnit(_unitType: UnitType): void {
             this.unitcount++;
-            this.coins -= 10;
+            this.coins -= _unitType;
             let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
             this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit: TankUnit = new TankUnit("Unit", spawnPos, false);
-            gameobjects.appendChild(newUnit);
-        }
+            let newUnit: Unit;
 
-        public spawnSuperTank(): void {
-            this.unitcount++;
-            this.coins -= 10;
-            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
-            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit: SuperTank = new SuperTank("Unit", spawnPos, false);
-            gameobjects.appendChild(newUnit);
-        }
+            switch (_unitType) {
+                case UnitType.TANK:
+                    newUnit = new TankUnit("Unit", spawnPos, false);
+                    break;
+                case UnitType.BOMBER:
+                    newUnit = new Bomber("Unit", spawnPos, false);
+                    break;
+                case UnitType.SUPERTANK:
+                    newUnit = new SuperTank("Unit", spawnPos, false);
+                    break;
+            }
 
-        public spawnBomberTank(): void {
-            this.unitcount++;
-            this.coins -= 10;
-            let spawnPos: ƒ.Vector3 = this.spawnPointArray[this.spawnpointIndex];
-            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit: Bomber = new Bomber("Unit", spawnPos, false);
             gameobjects.appendChild(newUnit);
         }
 
@@ -105,8 +108,57 @@ namespace RTS_V2 {
 
             }
 
-            if (this.coins >= 10 && this.unitcount < unitsPerPlayer) {
-                this.spawnTank();
+            if (this.coins >= this.nextUnit && this.unitcount < unitsPerPlayer && (this.nextUnit != null || this.nextUnit != undefined)) {
+                let randomValue: number = Math.random();
+                let unittypeArray: UnitType[] = [UnitType.TANK, UnitType.SUPERTANK, UnitType.BOMBER];
+                let randomIndex: number = ƒ.Random.default.getRangeFloored(0, 2);
+
+                if (randomValue > 0.4) {
+                    this.spawnUnit(this.nextUnit);
+                } else {
+                    this.spawnUnit(unittypeArray[randomIndex]);
+                }
+                this.nextUnit = null;
+
+                console.log("buy");
+            }
+        }
+
+        private defensiveAction(): void {
+            let units: Unit[] = Utils.getUnits(false);
+            let playerUnits: Unit[] = Utils.getUnits();
+
+            if (this.nextUnit == null || this.nextUnit == undefined) {
+                this.nextUnit = this.analysePlayerUnits(playerUnits);
+            }
+
+            if (units.length != 0) {
+                let playerUnitsNearBase: Unit[] = this.getPlayerUnitsNearBase(Utils.getUnits(true));
+
+                if (playerUnitsNearBase.length == 0) {
+                    for (let unit of units) {
+                        unit.setTarget = playerManager.base;
+                    }
+                } else if (playerUnitsNearBase.length > 0) {
+                    for (let unit of units) {
+                        unit.setTarget = playerUnitsNearBase[0];
+                    }
+                }
+
+            }
+
+            if (this.coins >= this.nextUnit && this.unitcount < unitsPerPlayer && (this.nextUnit != null || this.nextUnit != undefined)) {
+                let randomValue: number = Math.random();
+                let unittypeArray: UnitType[] = [UnitType.TANK, UnitType.SUPERTANK, UnitType.BOMBER];
+                let randomIndex: number = ƒ.Random.default.getRangeFloored(0, 2);
+
+                if (randomValue > 0.3) {
+                    this.spawnUnit(this.nextUnit);
+                } else {
+                    this.spawnUnit(unittypeArray[randomIndex]);
+                }
+                this.nextUnit = null;
+
                 console.log("buy");
             }
         }
@@ -149,7 +201,7 @@ namespace RTS_V2 {
                     return 1;
                 }
                 return 0;
-            })
+            });
 
             return unitsNearBase;
         }
@@ -166,7 +218,7 @@ namespace RTS_V2 {
                     this.aggressiveAction();
                     break;
                 case AIState.DEFENSIVE:
-                    console.log("defensive");
+                    this.defensiveAction();
                     break;
             }
         }
@@ -191,11 +243,11 @@ namespace RTS_V2 {
             }
 
             if (superTankCount > bomberCount && superTankCount > tanksCount) {
-                return UnitType.SUPERTANK;
-            } else if (bomberCount > superTankCount && bomberCount > tanksCount) {
                 return UnitType.BOMBER;
-            } else {
+            } else if (bomberCount > superTankCount && bomberCount > tanksCount) {
                 return UnitType.TANK;
+            } else {
+                return UnitType.SUPERTANK;
             }
         }
     }

@@ -3,9 +3,9 @@ namespace RTS_V2 {
     import ƒ = FudgeCore;
 
     export enum UnitType {
-        TANK,
-        SUPERTANK,
-        BOMBER
+        TANK = 10,
+        SUPERTANK = 20,
+        BOMBER = 15
     }
 
 

@@ -16,6 +16,10 @@ var RTS_V2;
             this.unitcount = 0;
             this.coinRate = 500;
             this.spawnpointIndex = 0;
+            this.changeToDefensive = () => {
+                this.nearBaseRadius = 10;
+                this.currentState = AIState.DEFENSIVE;
+            };
             this.coinTimerHandler = () => {
                 this.coins++;
             };
@@ -33,33 +37,29 @@ var RTS_V2;
             spawnPoint3.add(new ƒ.Vector3(1, -3, 0));
             this.spawnPointArray.push(spawnPoint1, spawnPoint2, spawnPoint3);
             ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, this.update.bind(this));
+            this.addEventListener("defensive", this.changeToDefensive);
         }
         startCoinTimer() {
             this.coinTimer = new ƒ.Timer(ƒ.Time.game, this.coinRate, 0, this.coinTimerHandler);
             console.log(this.coinTimer);
         }
-        spawnTank() {
+        spawnUnit(_unitType) {
             this.unitcount++;
-            this.coins -= 10;
+            this.coins -= _unitType;
             let spawnPos = this.spawnPointArray[this.spawnpointIndex];
             this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit = new RTS_V2.TankUnit("Unit", spawnPos, false);
-            RTS_V2.gameobjects.appendChild(newUnit);
-        }
-        spawnSuperTank() {
-            this.unitcount++;
-            this.coins -= 10;
-            let spawnPos = this.spawnPointArray[this.spawnpointIndex];
-            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit = new RTS_V2.SuperTank("Unit", spawnPos, false);
-            RTS_V2.gameobjects.appendChild(newUnit);
-        }
-        spawnBomberTank() {
-            this.unitcount++;
-            this.coins -= 10;
-            let spawnPos = this.spawnPointArray[this.spawnpointIndex];
-            this.spawnpointIndex = (this.spawnpointIndex + 1) % 3;
-            let newUnit = new RTS_V2.Bomber("Unit", spawnPos, false);
+            let newUnit;
+            switch (_unitType) {
+                case RTS_V2.UnitType.TANK:
+                    newUnit = new RTS_V2.TankUnit("Unit", spawnPos, false);
+                    break;
+                case RTS_V2.UnitType.BOMBER:
+                    newUnit = new RTS_V2.Bomber("Unit", spawnPos, false);
+                    break;
+                case RTS_V2.UnitType.SUPERTANK:
+                    newUnit = new RTS_V2.SuperTank("Unit", spawnPos, false);
+                    break;
+            }
             RTS_V2.gameobjects.appendChild(newUnit);
         }
         aggressiveAction() {
@@ -83,8 +83,50 @@ var RTS_V2;
                     }
                 }
             }
-            if (this.coins >= 10 && this.unitcount < RTS_V2.unitsPerPlayer) {
-                this.spawnTank();
+            if (this.coins >= this.nextUnit && this.unitcount < RTS_V2.unitsPerPlayer && (this.nextUnit != null || this.nextUnit != undefined)) {
+                let randomValue = Math.random();
+                let unittypeArray = [RTS_V2.UnitType.TANK, RTS_V2.UnitType.SUPERTANK, RTS_V2.UnitType.BOMBER];
+                let randomIndex = ƒ.Random.default.getRangeFloored(0, 2);
+                if (randomValue > 0.4) {
+                    this.spawnUnit(this.nextUnit);
+                }
+                else {
+                    this.spawnUnit(unittypeArray[randomIndex]);
+                }
+                this.nextUnit = null;
+                console.log("buy");
+            }
+        }
+        defensiveAction() {
+            let units = RTS_V2.Utils.getUnits(false);
+            let playerUnits = RTS_V2.Utils.getUnits();
+            if (this.nextUnit == null || this.nextUnit == undefined) {
+                this.nextUnit = this.analysePlayerUnits(playerUnits);
+            }
+            if (units.length != 0) {
+                let playerUnitsNearBase = this.getPlayerUnitsNearBase(RTS_V2.Utils.getUnits(true));
+                if (playerUnitsNearBase.length == 0) {
+                    for (let unit of units) {
+                        unit.setTarget = RTS_V2.playerManager.base;
+                    }
+                }
+                else if (playerUnitsNearBase.length > 0) {
+                    for (let unit of units) {
+                        unit.setTarget = playerUnitsNearBase[0];
+                    }
+                }
+            }
+            if (this.coins >= this.nextUnit && this.unitcount < RTS_V2.unitsPerPlayer && (this.nextUnit != null || this.nextUnit != undefined)) {
+                let randomValue = Math.random();
+                let unittypeArray = [RTS_V2.UnitType.TANK, RTS_V2.UnitType.SUPERTANK, RTS_V2.UnitType.BOMBER];
+                let randomIndex = ƒ.Random.default.getRangeFloored(0, 2);
+                if (randomValue > 0.3) {
+                    this.spawnUnit(this.nextUnit);
+                }
+                else {
+                    this.spawnUnit(unittypeArray[randomIndex]);
+                }
+                this.nextUnit = null;
                 console.log("buy");
             }
         }
@@ -134,7 +176,7 @@ var RTS_V2;
                     this.aggressiveAction();
                     break;
                 case AIState.DEFENSIVE:
-                    console.log("defensive");
+                    this.defensiveAction();
                     break;
             }
         }
@@ -156,13 +198,13 @@ var RTS_V2;
                 }
             }
             if (superTankCount > bomberCount && superTankCount > tanksCount) {
-                return RTS_V2.UnitType.SUPERTANK;
-            }
-            else if (bomberCount > superTankCount && bomberCount > tanksCount) {
                 return RTS_V2.UnitType.BOMBER;
             }
-            else {
+            else if (bomberCount > superTankCount && bomberCount > tanksCount) {
                 return RTS_V2.UnitType.TANK;
+            }
+            else {
+                return RTS_V2.UnitType.SUPERTANK;
             }
         }
     }
@@ -258,12 +300,15 @@ var RTS_V2;
     class Base extends RTS_V2.GameObject {
         constructor(_name, _pos, _isPlayer = true) {
             super(_name);
+            this.nearDeath = false;
             this.isPlayer = _isPlayer;
             this.collisionRange = 2;
             this.health = 1;
-            this.armor = 40;
             this.healthBar = new RTS_V2.Healthbar(this, 15, 60);
             this.createNode(_pos);
+        }
+        static set setarmor(_armor) {
+            Base.armor = _armor;
         }
         static loadImage() {
             Base.img = document.querySelector("#base");
@@ -281,7 +326,7 @@ var RTS_V2;
             console.log("base pos:" + this.mtxWorld.translation.copy);
         }
         calculateDamage(_bullet) {
-            this.health -= (_bullet.damage / this.armor);
+            this.health -= (_bullet.damage / Base.armor);
             //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
             if (this.health <= 0 && !this.isDead) {
                 RTS_V2.gameobjects.removeChild(this);
@@ -297,8 +342,14 @@ var RTS_V2;
                     RTS_V2.playerManager.dispatchEvent(eventEndGame);
                 }
             }
+            if (!this.nearDeath && this.health < 0.4 && !this.isPlayer) {
+                this.nearDeath = true;
+                let eventDefensisive = new CustomEvent("defensive", { bubbles: true });
+                RTS_V2.aiManager.dispatchEvent(eventDefensisive);
+            }
         }
     }
+    Base.armor = 0;
     RTS_V2.Base = Base;
 })(RTS_V2 || (RTS_V2 = {}));
 /// <reference path="GameObject.ts"/>
@@ -308,9 +359,9 @@ var RTS_V2;
     var ƒ = FudgeCore;
     let UnitType;
     (function (UnitType) {
-        UnitType[UnitType["TANK"] = 0] = "TANK";
-        UnitType[UnitType["SUPERTANK"] = 1] = "SUPERTANK";
-        UnitType[UnitType["BOMBER"] = 2] = "BOMBER";
+        UnitType[UnitType["TANK"] = 10] = "TANK";
+        UnitType[UnitType["SUPERTANK"] = 20] = "SUPERTANK";
+        UnitType[UnitType["BOMBER"] = 15] = "BOMBER";
     })(UnitType = RTS_V2.UnitType || (RTS_V2.UnitType = {}));
     class Unit extends RTS_V2.GameObject {
         constructor() {
@@ -934,6 +985,7 @@ var RTS_V2;
         RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.TANK, settings.unitValues.tank);
         RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.SUPERTANK, settings.unitValues.supertank);
         RTS_V2.Unit.unitSettings.set(RTS_V2.UnitType.BOMBER, settings.unitValues.bomber);
+        RTS_V2.Base.setarmor = settings.base.armor;
     }
     function loadGameImages() {
         RTS_V2.Bullet.loadImages();
@@ -994,14 +1046,14 @@ var RTS_V2;
                 localStorage.setItem("gameTime", RTS_V2.Utils.gameTimeToString());
                 localStorage.setItem("destroyedUnits", RTS_V2.playerManager.unitsDestroyed.toString());
                 localStorage.setItem("gameStatus", "won");
-                window.location.replace("/endScreen.html");
+                window.location.replace("./endScreen.html");
             };
             this.gameLostHandler = (_event) => {
                 console.log("End Game");
                 localStorage.setItem("gameTime", RTS_V2.Utils.gameTimeToString());
                 localStorage.setItem("destroyedUnits", RTS_V2.playerManager.unitsDestroyed.toString());
                 localStorage.setItem("gameStatus", "lost");
-                window.location.replace("/endScreen.html");
+                window.location.replace("./endScreen.html");
             };
             this.pointerUp = (_event) => {
                 _event.preventDefault();

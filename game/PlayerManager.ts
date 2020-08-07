@@ -75,7 +75,7 @@ namespace RTS_V2 {
             localStorage.setItem("gameTime", Utils.gameTimeToString());
             localStorage.setItem("destroyedUnits", playerManager.unitsDestroyed.toString());
             localStorage.setItem("gameStatus", "won");
-            window.location.replace("/endScreen.html");
+            window.location.replace("./endScreen.html");
         }
 
         public gameLostHandler = (_event: Event): void => {
@@ -83,7 +83,7 @@ namespace RTS_V2 {
             localStorage.setItem("gameTime", Utils.gameTimeToString());
             localStorage.setItem("destroyedUnits", playerManager.unitsDestroyed.toString());
             localStorage.setItem("gameStatus", "lost");
-            window.location.replace("/endScreen.html");
+            window.location.replace("./endScreen.html");
         }
 
         public pointerUp = (_event: ƒ.EventPointer): void => {
