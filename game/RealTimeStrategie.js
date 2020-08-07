@@ -948,7 +948,7 @@ var RTS_V2;
         cmpCamera.pivot.translate(ƒ.Vector3.Z(cameraDistance));
         let cameraLookAt = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
-        cmpCamera.backgroundColor = ƒ.Color.CSS("#395709");
+        cmpCamera.backgroundColor = ƒ.Color.CSS("#80BE1F");
         RTS_V2.viewport = new ƒ.Viewport();
         RTS_V2.viewport.initialize("Viewport", graph, cmpCamera, canvas);
         //setup AudioNode

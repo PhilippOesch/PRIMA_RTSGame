@@ -75,7 +75,7 @@ namespace RTS_V2 {
         cmpCamera.pivot.translate(ƒ.Vector3.Z(cameraDistance));
         let cameraLookAt: ƒ.Vector3 = new ƒ.Vector3(0, 0, 0);
         cmpCamera.pivot.lookAt(cameraLookAt);
-        cmpCamera.backgroundColor = ƒ.Color.CSS("#395709");
+        cmpCamera.backgroundColor = ƒ.Color.CSS("#80BE1F");
 
         viewport = new ƒ.Viewport();
         viewport.initialize("Viewport", graph, cmpCamera, canvas);
