@@ -3,6 +3,7 @@ body, html{
     height: 100%;
     margin: 0;
     font-family: Montserrat;
+    background-color: #80BE1F;
     background-image: url("../assets/BackgroundImage.jpg");
 }
 
@@ -18,7 +19,6 @@ body, html{
 .background{
     width: 100%;
     height: 100%;
-    background-color: #80BE1F;
 }
 
 .menu-container{
