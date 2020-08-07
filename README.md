@@ -4,7 +4,7 @@
 * [Quellcode](https://github.com/PhilippOesch/PRIMA_RTSGame/tree/master/game)
 * [Bedienungsanleitung](https://github.com/PhilippOesch/PRIMA_RTSGame/blob/master/README.md#bedienungsanleitung)
 * [Designdokument](https://github.com/PhilippOesch/PRIMA_RTSGame/blob/master/documentation/Designdokument.pdf)
-* [Archiviertes Spiel](https://github.com/PhilippOesch/PRIMA_RTSGame/blob/master/PRIMA_RTSGame.zip)
+* [Gepacktes Archiv](https://github.com/PhilippOesch/PRIMA_RTSGame/blob/master/PRIMA_RTSGame.zip)
 
 ## Checkliste für Leistungsnachweis
 Nr | Bezeichnung | Inhalt
