@@ -64,7 +64,11 @@ var RTS_V2;
         }
         aggressiveAction() {
             let units = RTS_V2.Utils.getUnits(false);
+            let playerUnits = RTS_V2.Utils.getUnits();
             let activeAndNonActiveUnits;
+            if (this.nextUnit == null || this.nextUnit == undefined) {
+                this.nextUnit = this.analysePlayerUnits(playerUnits);
+            }
             if (units.length != 0) {
                 activeAndNonActiveUnits = this.splitActiveAndNonActiveUnits(units);
                 let playerUnitsNearBase = this.getPlayerUnitsNearBase(RTS_V2.Utils.getUnits(true));
@@ -132,6 +136,33 @@ var RTS_V2;
                 case AIState.DEFENSIVE:
                     console.log("defensive");
                     break;
+            }
+        }
+        analysePlayerUnits(_units) {
+            let tanksCount = 0;
+            let superTankCount = 0;
+            let bomberCount = 0;
+            for (let unit of _units) {
+                switch (unit.unitType) {
+                    case RTS_V2.UnitType.TANK:
+                        tanksCount++;
+                        break;
+                    case RTS_V2.UnitType.SUPERTANK:
+                        superTankCount++;
+                        break;
+                    case RTS_V2.UnitType.BOMBER:
+                        bomberCount++;
+                        break;
+                }
+            }
+            if (superTankCount > bomberCount && superTankCount > tanksCount) {
+                return RTS_V2.UnitType.SUPERTANK;
+            }
+            else if (bomberCount > superTankCount && bomberCount > tanksCount) {
+                return RTS_V2.UnitType.BOMBER;
+            }
+            else {
+                return RTS_V2.UnitType.TANK;
             }
         }
     }
