@@ -34,7 +34,7 @@ Nr | Bezeichnung | Inhalt
 #### Spiel Ziel
 Ziel ist es, die Gegnerbasis (rot) zu zerstören, bevor die eigene Basis (blau) zerstört wird.
 #### Einheiten kaufen
-* Spielerbasis, sich auf der linken Seite befindent, anklicken
+* Spielerbasis, sich auf der linken Seite befindend, anklicken
 * Neben der Basis öffnet sich ein Kontextmenü
 * Im Kontext Menü die gewünschte Einheit auswählen
 * Danach spawn die Einheit unterhalb der Basis
