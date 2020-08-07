@@ -41,7 +41,6 @@ namespace RTS_V2 {
 
     export interface UnitSettings{
         damage: number;
-        health: number;
         armor: number;
         speed: number;
         shootingrate: number;

@@ -38,7 +38,7 @@ namespace RTS_V2 {
             let pos: ƒ.Matrix4x4 = this.cmpTransform.local.copy;
             let movement: ƒ.Vector3 = pos.getTranslationTo(enemyPos);
             movement.normalize(this.speed);
-            if (this.target == undefined) {
+            if (this.target == undefined || this.target == null) {
                 bullets.removeChild(this);
             }
 
@@ -75,6 +75,7 @@ namespace RTS_V2 {
 
 
         private collidingWithEnemy(): void {
+            console.log(this.damage);
             if (this.collisionActive) {
                 let thisPos: ƒ.Vector3 = this.mtxWorld.translation;
                 let targetPos: ƒ.Vector3 = this.target.mtxWorld.translation.copy;

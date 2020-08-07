@@ -18,7 +18,7 @@ namespace RTS_V2 {
             this.isPlayer = _isPlayer;
             this.collisionRange = 0.8;
             this.shootingRange = 4;
-            this.health = unitSettings.health;
+            this.health = 1;
             this.armor = unitSettings.armor;
             this.shootingRate = unitSettings.shootingrate;
             this.speed = unitSettings.speed;
@@ -42,7 +42,7 @@ namespace RTS_V2 {
             } else if(_bullet.unitType == UnitType.SUPERTANK) {
                 damage = ((_bullet.damage * 0.5) / this.armor);
             } else {
-                damage = ((_bullet.damage) / this.armor);
+                damage = (_bullet.damage / this.armor);
             }
             
             this.health -= damage;

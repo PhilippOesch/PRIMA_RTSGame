@@ -510,7 +510,7 @@ var RTS_V2;
             this.isPlayer = _isPlayer;
             this.collisionRange = 0.8;
             this.shootingRange = 4;
-            this.health = unitSettings.health;
+            this.health = 1;
             this.armor = unitSettings.armor;
             this.shootingRate = unitSettings.shootingrate;
             this.speed = unitSettings.speed;
@@ -533,7 +533,7 @@ var RTS_V2;
                 damage = ((_bullet.damage * 0.5) / this.armor);
             }
             else {
-                damage = ((_bullet.damage) / this.armor);
+                damage = (_bullet.damage / this.armor);
             }
             this.health -= damage;
             //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
@@ -652,7 +652,7 @@ var RTS_V2;
             let pos = this.cmpTransform.local.copy;
             let movement = pos.getTranslationTo(enemyPos);
             movement.normalize(this.speed);
-            if (this.target == undefined) {
+            if (this.target == undefined || this.target == null) {
                 RTS_V2.bullets.removeChild(this);
             }
             this.cmpTransform.local.translate(movement);
@@ -680,6 +680,7 @@ var RTS_V2;
             this.appendChild(this.textureNode);
         }
         collidingWithEnemy() {
+            console.log(this.damage);
             if (this.collisionActive) {
                 let thisPos = this.mtxWorld.translation;
                 let targetPos = this.target.mtxWorld.translation.copy;
@@ -1200,7 +1201,7 @@ var RTS_V2;
             this.isPlayer = _isPlayer;
             this.collisionRange = 1;
             this.shootingRange = 6;
-            this.health = unitSettings.health;
+            this.health = 1;
             this.armor = unitSettings.armor;
             this.shootingRate = unitSettings.shootingrate;
             this.speed = unitSettings.speed;
@@ -1223,7 +1224,7 @@ var RTS_V2;
                 damage = ((_bullet.damage * 0.5) / this.armor);
             }
             else {
-                damage = ((_bullet.damage) / this.armor);
+                damage = _bullet.damage / this.armor;
             }
             this.health -= damage;
             //(<Healthbar>this.healthBar).health = Math.floor(this.health * 100);
@@ -1304,7 +1305,7 @@ var RTS_V2;
             this.isPlayer = _isPlayer;
             this.collisionRange = 0.6;
             this.shootingRange = 5;
-            this.health = unitsetting.health;
+            this.health = 1;
             this.armor = unitsetting.armor;
             this.shootingRate = unitsetting.shootingrate;
             this.speed = unitsetting.speed;

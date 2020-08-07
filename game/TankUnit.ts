@@ -23,7 +23,7 @@ namespace RTS_V2 {
             this.isPlayer = _isPlayer;
             this.collisionRange = 0.6;
             this.shootingRange = 5;
-            this.health = unitsetting.health;
+            this.health = 1;
             this.armor = unitsetting.armor;
             this.shootingRate = unitsetting.shootingrate;
             this.speed = unitsetting.speed;
