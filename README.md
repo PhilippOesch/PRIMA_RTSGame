@@ -42,6 +42,6 @@ Ziel ist es, die Gegnerbasis (rot) zu zerstören, bevor die eigene Basis (blau) 
 * _oder_ mit der linken Maustasten gedrückt ein Rechteck um die gewünschten Einheiten ziehen und die Maustaste loslassen
 * _oder_ mit der Taste A alle Spieler-Einheiten auf einmal auswählen
 * ausgewählte Einheiten werden blau markiert
-#### Kommandieren der Ausgewählter Einheiten
+#### Steuern der ausgewählten Einheiten
 * Mit der rechten Maustaste auf einen Punkt Im Spielfeld klicken - Einheiten bewegen sich dort hin
 * Mit der rechten Maustaste auf ein Gegnerobjekt klicken - Einheiten greifen das Gegnerobjekt an
