@@ -1,6 +1,6 @@
 # PRIMA
 ## Links
-* [Link zum Spiel](https://philippoesch.github.io/PRIMA_RTSGame/game/mainMenu.html)
+* [Link zum Spiel](https://philippoesch.github.io/PRIMA_RTSGame/game/scenes/mainMenu.html)
 * [Quellcode](https://github.com/PhilippOesch/PRIMA_RTSGame/tree/master/game)
 
 ## Checkliste für Leistungsnachweis
